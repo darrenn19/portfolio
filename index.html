@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061521">
+  <title>Darren Nadarajah - Portfolio</title>
+  <link rel="stylesheet" href="pixel-night.css">
+</head>
+<body>
+  <div class="pixel-night" aria-hidden="true">
+    <canvas id="pixelNightCanvas"></canvas>
+    <div class="pixel-night__vignette"></div>
+    <div class="pixel-night__grain"></div>
+  </div>
+
+  <main class="desktop" id="desktop" aria-label="Darren's portfolio desktop">
+    <section class="portfolio-window" data-window="about" aria-labelledby="about-title" hidden>
+      <header class="window-titlebar">
+        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand About window" aria-pressed="false"></button>
+        <span class="window-titlebar__title" id="about-title">About</span>
+        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close About window"></button>
+      </header>
+      <div class="window-content about-content">
+        <p class="eyebrow">A LITTLE ABOUT ME</p>
+        <h1>Hi, I’m Darren.</h1>
+        <p>I’m building a life around curiosity, thoughtful work, and making useful things for people. This little desktop is a place to share what I’m learning and creating.</p>
+        <div class="pixel-rule" aria-hidden="true"></div>
+        <p class="quiet-note">Currently exploring what’s next.</p>
+      </div>
+    </section>
+    <section class="portfolio-window projects-window" data-window="projects" aria-labelledby="projects-title" hidden>
+      <header class="window-titlebar">
+        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand Projects window" aria-pressed="false"></button>
+        <span class="window-titlebar__title" id="projects-title">Projects</span>
+        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Projects window"></button>
+      </header>
+      <div class="window-content empty-state">
+        <span class="empty-state__pixel" aria-hidden="true"></span>
+        <p class="eyebrow">WORK IN PROGRESS</p>
+        <h1>Projects are on their way.</h1>
+        <p>This space is ready for a project feed. Check back soon.</p>
+      </div>
+    </section>
+    <section class="portfolio-window" data-window="resume" aria-labelledby="resume-title" hidden>
+      <header class="window-titlebar">
+        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand Resume window" aria-pressed="false"></button>
+        <span class="window-titlebar__title" id="resume-title">Resume</span>
+        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Resume window"></button>
+      </header>
+      <div class="window-content empty-state">
+        <p class="eyebrow">EXPERIENCE &amp; AWARDS</p>
+        <h1>The next chapter.</h1>
+        <p>Experience, volunteering, and awards will be collected here.</p>
+      </div>
+    </section>
+    <section class="portfolio-window" data-window="contact" aria-labelledby="contact-title" hidden>
+      <header class="window-titlebar">
+        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand Contact window" aria-pressed="false"></button>
+        <span class="window-titlebar__title" id="contact-title">Contact</span>
+        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Contact window"></button>
+      </header>
+      <div class="window-content empty-state">
+        <p class="eyebrow">SAY HELLO</p>
+        <h1>Let’s connect.</h1>
+        <p>Contact links will live here soon.</p>
+      </div>
+    </section>
+    <section class="portfolio-window settings-window" data-window="settings" aria-labelledby="settings-title" hidden>
+      <header class="window-titlebar">
+        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand Settings window" aria-pressed="false"></button>
+        <span class="window-titlebar__title" id="settings-title">Settings</span>
+        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Settings window"></button>
+      </header>
+      <div class="window-content settings-content">
+        <p class="eyebrow">DESKTOP PREFERENCES</p>
+        <label class="setting-row" for="accent-color">
+          <span><strong>Accent color</strong><small>Change the desktop highlight.</small></span>
+          <input id="accent-color" type="color" value="#e6c878">
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <nav class="desktop-dock" aria-label="Portfolio sections">
+    <button class="dock-item" type="button" data-target="about" aria-label="Open About" title="About"><span class="dock-icon dock-icon--about" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
+    <button class="dock-item" type="button" data-target="projects" aria-label="Open Projects" title="Projects"><span class="dock-icon dock-icon--projects" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
+    <button class="dock-item" type="button" data-target="resume" aria-label="Open Resume" title="Resume"><span class="dock-icon dock-icon--resume" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
+    <button class="dock-item" type="button" data-target="contact" aria-label="Open Contact" title="Contact"><span class="dock-icon dock-icon--contact" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
+    <button class="dock-item" type="button" data-target="settings" aria-label="Open Settings" title="Settings"><span class="dock-icon dock-icon--settings" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
+  </nav>
+
+  <script src="desktop.js"></script>
+  <script src="pixel-night.js"></script>
+</body>
+</html>

@@ -1,0 +1,521 @@
+(() => {
+  "use strict";
+
+  const root = document.body;
+  const dock = document.querySelector(".desktop-dock");
+  const windows = [...document.querySelectorAll(".portfolio-window")];
+  const accentSetting = document.getElementById("accent-color");
+  const accentKey = "portfolio-accent";
+  const mobileBreakpoint = window.matchMedia("(max-width: 767px)");
+  const openingAnimations = new WeakMap();
+  let openCount = 0;
+  let focusedWindow = null;
+
+  function readSetting(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+
+  function writeSetting(key, value) {
+    try { localStorage.setItem(key, value); } catch { /* Session-only fallback. */ }
+  }
+
+  root.classList.toggle("is-mobile-mode", mobileBreakpoint.matches);
+
+  const savedAccent = readSetting(accentKey);
+  if (savedAccent && /^#[0-9a-f]{6}$/i.test(savedAccent)) {
+    document.documentElement.style.setProperty("--desktop-accent", savedAccent);
+    accentSetting.value = savedAccent;
+  }
+
+  function syncDock() {
+    const openIds = new Set(windows.filter(item => !item.hidden).map(item => item.dataset.window));
+    dock.querySelectorAll("[data-target]").forEach(button => {
+      const isOpen = openIds.has(button.dataset.target);
+      button.classList.toggle("is-open", isOpen);
+      button.classList.toggle("is-focused", focusedWindow?.dataset.window === button.dataset.target);
+      button.setAttribute("aria-current", focusedWindow?.dataset.window === button.dataset.target ? "page" : "false");
+    });
+    root.classList.toggle("has-open-window", openIds.size > 0);
+  }
+
+  function focusWindow(windowElement) {
+    const otherWindows = windows
+      .filter(item => item !== windowElement && !item.hidden)
+      .sort((first, second) => Number(first.style.zIndex) - Number(second.style.zIndex));
+    otherWindows.forEach((item, index) => {
+      item.style.zIndex = String(10 + index);
+    });
+    focusedWindow = windowElement;
+    windowElement.style.zIndex = String(10 + otherWindows.length);
+    windowElement.focus({ preventScroll: true });
+    syncDock();
+  }
+
+  function setGenieOrigin(windowElement) {
+    const button = dock.querySelector(`[data-target="${windowElement.dataset.window}"]`);
+    const icon = button.querySelector(".dock-icon");
+    const windowBounds = windowElement.getBoundingClientRect();
+    const iconBounds = icon.getBoundingClientRect();
+    const iconX = iconBounds.left + iconBounds.width / 2 - windowBounds.left;
+    const iconY = iconBounds.top + iconBounds.height / 2 - windowBounds.top;
+    windowElement.style.setProperty("--genie-origin-x", `${iconX}px`);
+    windowElement.style.setProperty("--genie-origin-y", `${iconY}px`);
+    windowElement.style.setProperty(
+      "--window-rest-transform",
+      root.classList.contains("is-mobile-mode") || windowElement.classList.contains("is-expanded")
+        ? "translate3d(0, 0, 0)"
+        : windowElement.classList.contains("is-dragged")
+        ? "translate3d(0, 0, 0)"
+        : "translate(-50%, -50%)"
+    );
+
+    return {
+      x: iconX,
+      y: iconY,
+      xPercent: iconX / windowBounds.width * 100,
+      yPercent: iconY / windowBounds.height * 100
+    };
+  }
+
+  function makePolygon(points) {
+    return `polygon(${points.map(([x, y]) => `${x}% ${y}%`).join(", ")})`;
+  }
+
+  function playGenieOpen(windowElement, origin) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      windowElement.classList.remove("is-opening");
+      return;
+    }
+
+    openingAnimations.get(windowElement)?.cancel();
+    windowElement.classList.add("is-opening");
+    const x = origin.xPercent;
+    const y = origin.yPercent;
+    const clamp = value => Math.max(0, Math.min(100, value));
+    const collapsed = makePolygon(Array.from({ length: 8 }, () => [x, y]));
+    const funnel = makePolygon([
+      [0, 0], [100, 0], [100, 52], [clamp(x + 34), 76],
+      [clamp(x + 7), 100], [clamp(x - 7), 100], [clamp(x - 34), 76], [0, 52]
+    ]);
+    const widening = makePolygon([
+      [0, 0], [100, 0], [100, 76], [clamp(x + 72), 90],
+      [clamp(x + 36), 100], [clamp(x - 36), 100], [clamp(x - 72), 90], [0, 76]
+    ]);
+    const full = makePolygon([
+      [0, 0], [50, 0], [100, 0], [100, 50],
+      [100, 100], [50, 100], [0, 100], [0, 50]
+    ]);
+    const restTransform = windowElement.style.getPropertyValue("--window-rest-transform");
+    const animation = windowElement.animate([
+      {
+        opacity: 0.8,
+        clipPath: collapsed,
+        transformOrigin: `${origin.x}px ${origin.y}px`,
+        transform: `${restTransform} scale(0.015, 0.02)`
+      },
+      {
+        offset: 0.32,
+        opacity: 1,
+        clipPath: funnel,
+        transform: `${restTransform} scale(0.12, 0.82)`
+      },
+      {
+        offset: 0.76,
+        clipPath: widening,
+        transform: `${restTransform} scale(1.025, 1.015)`
+      },
+      {
+        opacity: 1,
+        clipPath: full,
+        transform: `${restTransform} scale(1, 1)`
+      }
+    ], {
+      duration: 420,
+      easing: "cubic-bezier(0.18, 0.86, 0.24, 1)",
+      fill: "both"
+    });
+
+    openingAnimations.set(windowElement, animation);
+    animation.addEventListener("finish", () => {
+      if (openingAnimations.get(windowElement) === animation) {
+        openingAnimations.delete(windowElement);
+        windowElement.classList.remove("is-opening");
+        animation.cancel();
+      }
+    }, { once: true });
+
+    return {
+      x: iconX,
+      y: iconY,
+      xPercent: iconX / windowBounds.width * 100,
+      yPercent: iconY / windowBounds.height * 100
+    };
+  }
+
+  function makePolygon(points) {
+    return `polygon(${points.map(([x, y]) => `${x}% ${y}%`).join(", ")})`;
+  }
+
+  function playGenieOpen(windowElement, origin) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      windowElement.classList.remove("is-opening");
+      return;
+    }
+
+    openingAnimations.get(windowElement)?.cancel();
+    windowElement.classList.add("is-opening");
+    const x = origin.xPercent;
+    const y = origin.yPercent;
+    const clamp = value => Math.max(0, Math.min(100, value));
+    const collapsed = makePolygon(Array.from({ length: 8 }, () => [x, y]));
+    const funnel = makePolygon([
+      [0, 0], [100, 0], [100, 52], [clamp(x + 34), 76],
+      [clamp(x + 7), 100], [clamp(x - 7), 100], [clamp(x - 34), 76], [0, 52]
+    ]);
+    const widening = makePolygon([
+      [0, 0], [100, 0], [100, 76], [clamp(x + 72), 90],
+      [clamp(x + 36), 100], [clamp(x - 36), 100], [clamp(x - 72), 90], [0, 76]
+    ]);
+    const full = makePolygon([
+      [0, 0], [50, 0], [100, 0], [100, 50],
+      [100, 100], [50, 100], [0, 100], [0, 50]
+    ]);
+    const restTransform = windowElement.style.getPropertyValue("--window-rest-transform");
+    const animation = windowElement.animate([
+      {
+        opacity: 0.8,
+        clipPath: collapsed,
+        transformOrigin: `${origin.x}px ${origin.y}px`,
+        transform: `${restTransform} scale(0.015, 0.02)`
+      },
+      {
+        offset: 0.32,
+        opacity: 1,
+        clipPath: funnel,
+        transform: `${restTransform} scale(0.12, 0.82)`
+      },
+      {
+        offset: 0.76,
+        clipPath: widening,
+        transform: `${restTransform} scale(1.025, 1.015)`
+      },
+      {
+        opacity: 1,
+        clipPath: full,
+        transform: `${restTransform} scale(1, 1)`
+      }
+    ], {
+      duration: 420,
+      easing: "cubic-bezier(0.18, 0.86, 0.24, 1)",
+      fill: "both"
+    });
+
+    openingAnimations.set(windowElement, animation);
+    animation.addEventListener("finish", () => {
+      if (openingAnimations.get(windowElement) === animation) {
+        openingAnimations.delete(windowElement);
+        windowElement.classList.remove("is-opening");
+        animation.cancel();
+      }
+    }, { once: true });
+  }
+
+  function addResizeHandles(windowElement) {
+    ["n", "ne", "e", "se", "s", "sw", "w", "nw"].forEach(direction => {
+      const handle = document.createElement("span");
+      handle.className = `resize-handle resize-handle--${direction}`;
+      handle.dataset.resize = direction;
+      handle.setAttribute("aria-hidden", "true");
+      windowElement.append(handle);
+    });
+  }
+
+  function beginResize(windowElement, handle, event) {
+    const direction = handle.dataset.resize;
+    const bounds = windowElement.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startLeft = bounds.left;
+    const startTop = bounds.top;
+    const startWidth = bounds.width;
+    const startHeight = bounds.height;
+    const fixedRight = startLeft + startWidth;
+    const fixedBottom = startTop + startHeight;
+    let pointerX = startX;
+    let pointerY = startY;
+    let frame = 0;
+
+    windowElement.style.left = `${startLeft}px`;
+    windowElement.style.top = `${startTop}px`;
+    windowElement.style.width = `${startWidth}px`;
+    windowElement.style.height = `${startHeight}px`;
+    windowElement.style.transform = "translate3d(0, 0, 0)";
+    windowElement.classList.add("is-dragged");
+    windowElement.style.willChange = "left, top, width, height";
+    root.classList.add("is-window-dragging");
+    handle.setPointerCapture(event.pointerId);
+
+    const applyResize = () => {
+      const deltaX = pointerX - startX;
+      const deltaY = pointerY - startY;
+      const widthDelta = direction.includes("e") ? deltaX : direction.includes("w") ? -deltaX : 0;
+      const heightDelta = direction.includes("s") ? deltaY : direction.includes("n") ? -deltaY : 0;
+      const maxWidth = direction.includes("w") ? fixedRight : window.innerWidth - startLeft;
+      const maxHeight = direction.includes("n") ? fixedBottom : window.innerHeight - startTop;
+      const width = Math.max(320, Math.min(maxWidth, startWidth + widthDelta));
+      const height = Math.max(260, Math.min(maxHeight, startHeight + heightDelta));
+      const left = direction.includes("w") ? fixedRight - width : startLeft;
+      const top = direction.includes("n") ? fixedBottom - height : startTop;
+
+      windowElement.style.left = `${left}px`;
+      windowElement.style.top = `${top}px`;
+      windowElement.style.width = `${width}px`;
+      windowElement.style.height = `${height}px`;
+      frame = 0;
+    };
+
+    const move = moveEvent => {
+      pointerX = moveEvent.clientX;
+      pointerY = moveEvent.clientY;
+      if (!frame) frame = requestAnimationFrame(applyResize);
+    };
+    const stop = stopEvent => {
+      pointerX = stopEvent.clientX;
+      pointerY = stopEvent.clientY;
+      if (frame) cancelAnimationFrame(frame);
+      applyResize();
+      windowElement.style.willChange = "";
+      root.classList.remove("is-window-dragging");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", stop);
+      handle.removeEventListener("pointercancel", stop);
+    };
+
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", stop);
+    handle.addEventListener("pointercancel", stop);
+  }
+
+  function getWindowTitle(windowElement) {
+    return windowElement.querySelector(".window-titlebar__title").textContent.trim();
+  }
+
+  function toggleExpanded(windowElement, button) {
+    const title = getWindowTitle(windowElement);
+    if (windowElement.classList.contains("is-expanded")) {
+      windowElement.classList.remove("is-expanded");
+      windowElement.style.left = windowElement.dataset.restoreLeft || "";
+      windowElement.style.top = windowElement.dataset.restoreTop || "";
+      windowElement.style.width = windowElement.dataset.restoreWidth || "";
+      windowElement.style.height = windowElement.dataset.restoreHeight || "";
+      windowElement.style.transform = windowElement.dataset.restoreTransform || "";
+      delete windowElement.dataset.restoreLeft;
+      delete windowElement.dataset.restoreTop;
+      delete windowElement.dataset.restoreWidth;
+      delete windowElement.dataset.restoreHeight;
+      delete windowElement.dataset.restoreTransform;
+      button.setAttribute("aria-label", `Expand ${title} window`);
+      button.setAttribute("aria-pressed", "false");
+      return;
+    }
+
+    windowElement.dataset.restoreLeft = windowElement.style.left;
+    windowElement.dataset.restoreTop = windowElement.style.top;
+    windowElement.dataset.restoreWidth = windowElement.style.width;
+    windowElement.dataset.restoreHeight = windowElement.style.height;
+    windowElement.dataset.restoreTransform = windowElement.style.transform;
+    windowElement.style.left = "";
+    windowElement.style.top = "";
+    windowElement.style.width = "";
+    windowElement.style.height = "";
+    windowElement.style.transform = "";
+    windowElement.classList.add("is-expanded");
+    button.setAttribute("aria-label", `Restore ${title} window size`);
+    button.setAttribute("aria-pressed", "true");
+  }
+
+  function openWindow(id) {
+    const windowElement = windows.find(item => item.dataset.window === id);
+    if (!windowElement) return;
+
+    if (root.classList.contains("is-mobile-mode")) {
+      windows.forEach(item => {
+        if (item !== windowElement) {
+          item.hidden = true;
+          item.classList.remove("is-opening");
+        }
+      });
+    }
+
+    if (windowElement.hidden) {
+      windowElement.hidden = false;
+      windowElement.style.setProperty("--window-offset", `${(openCount % 5) * 22}px`);
+      openCount++;
+      windowElement.style.visibility = "hidden";
+      const origin = setGenieOrigin(windowElement);
+      windowElement.style.visibility = "";
+      playGenieOpen(windowElement, origin);
+    }
+    focusWindow(windowElement);
+  }
+
+  function resetWindowAfterClose(windowElement) {
+    openingAnimations.get(windowElement)?.cancel();
+    openingAnimations.delete(windowElement);
+    windowElement.hidden = true;
+    windowElement.classList.remove("is-closing", "is-opening", "is-expanded", "is-dragged");
+    windowElement.style.left = "";
+    windowElement.style.top = "";
+    windowElement.style.transform = "";
+    windowElement.style.willChange = "";
+    const expandButton = windowElement.querySelector('[data-action="expand"]');
+    expandButton.setAttribute("aria-label", `Expand ${getWindowTitle(windowElement)} window`);
+    expandButton.setAttribute("aria-pressed", "false");
+    delete windowElement.dataset.restoreLeft;
+    delete windowElement.dataset.restoreTop;
+    delete windowElement.dataset.restoreWidth;
+    delete windowElement.dataset.restoreHeight;
+    delete windowElement.dataset.restoreTransform;
+    if (focusedWindow === windowElement) {
+      focusedWindow = windows
+        .filter(item => item !== windowElement && !item.hidden)
+        .sort((first, second) => Number(second.style.zIndex) - Number(first.style.zIndex))[0] || null;
+    }
+    syncDock();
+  }
+
+  function closeWindow(windowElement) {
+    if (windowElement.hidden) return;
+    resetWindowAfterClose(windowElement);
+  }
+
+  dock.addEventListener("click", event => {
+    const button = event.target.closest("[data-target]");
+    if (button) openWindow(button.dataset.target);
+  });
+
+  windows.forEach(windowElement => {
+    windowElement.tabIndex = -1;
+    addResizeHandles(windowElement);
+    windowElement.addEventListener("click", event => {
+      const action = event.target.closest("[data-action]")?.dataset.action;
+      if (action === "close") closeWindow(windowElement);
+      if (action === "expand") {
+        toggleExpanded(windowElement, event.target.closest("[data-action]"));
+      }
+    });
+
+    windowElement.addEventListener("pointerdown", event => {
+      if (event.button !== 0) return;
+      focusWindow(windowElement);
+      const resizeHandle = event.target.closest("[data-resize]");
+      if (resizeHandle && !root.classList.contains("is-mobile-mode") && !windowElement.classList.contains("is-expanded")) {
+        beginResize(windowElement, resizeHandle, event);
+        return;
+      }
+      if (root.classList.contains("is-mobile-mode") || windowElement.classList.contains("is-expanded")) return;
+      const titlebar = event.target.closest(".window-titlebar");
+      if (!titlebar || event.target.closest("button")) return;
+      const bounds = windowElement.getBoundingClientRect();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startLeft = bounds.left;
+      const startTop = bounds.top;
+      const windowWidth = bounds.width;
+      const windowHeight = bounds.height;
+      windowElement.style.left = `${startLeft}px`;
+      windowElement.style.top = `${startTop}px`;
+      windowElement.style.transform = "translate3d(0, 0, 0)";
+      windowElement.classList.add("is-dragged");
+      windowElement.style.willChange = "transform";
+      root.classList.add("is-window-dragging");
+      titlebar.setPointerCapture(event.pointerId);
+
+      let latestX = startX;
+      let latestY = startY;
+      let frame = 0;
+      let finalLeft = startLeft;
+      let finalTop = startTop;
+
+      const applyDrag = () => {
+        const maxLeft = Math.max(0, window.innerWidth - windowWidth);
+        const maxTop = Math.max(0, window.innerHeight - windowHeight);
+        finalLeft = Math.max(0, Math.min(maxLeft, startLeft + latestX - startX));
+        finalTop = Math.max(0, Math.min(maxTop, startTop + latestY - startY));
+        windowElement.style.transform = `translate3d(${finalLeft - startLeft}px, ${finalTop - startTop}px, 0)`;
+        frame = 0;
+      };
+
+      const move = moveEvent => {
+        latestX = moveEvent.clientX;
+        latestY = moveEvent.clientY;
+        if (!frame) frame = requestAnimationFrame(applyDrag);
+      };
+      const stop = stopEvent => {
+        latestX = stopEvent.clientX;
+        latestY = stopEvent.clientY;
+        if (frame) cancelAnimationFrame(frame);
+        applyDrag();
+        windowElement.style.left = `${finalLeft}px`;
+        windowElement.style.top = `${finalTop}px`;
+        windowElement.style.transform = "translate3d(0, 0, 0)";
+        windowElement.style.willChange = "";
+        root.classList.remove("is-window-dragging");
+        titlebar.removeEventListener("pointermove", move);
+        titlebar.removeEventListener("pointerup", stop);
+        titlebar.removeEventListener("pointercancel", stop);
+      };
+      titlebar.addEventListener("pointermove", move);
+      titlebar.addEventListener("pointerup", stop);
+      titlebar.addEventListener("pointercancel", stop);
+    });
+
+  });
+
+  function applyMobileMode(enabled) {
+    root.classList.toggle("is-mobile-mode", enabled);
+
+    if (enabled) {
+      if (!focusedWindow) {
+        focusedWindow = windows
+          .filter(item => !item.hidden)
+          .sort((first, second) => Number(second.style.zIndex) - Number(first.style.zIndex))[0] || null;
+      }
+      windows.forEach(item => {
+        if (item === focusedWindow) {
+          return;
+        }
+        item.hidden = true;
+      });
+    }
+
+    windows.forEach(item => {
+      item.classList.remove("is-opening");
+      item.style.left = "";
+      item.style.top = "";
+      item.style.width = "";
+      item.style.height = "";
+      item.style.transform = "";
+      item.style.willChange = "";
+      item.classList.remove("is-dragged", "is-expanded");
+      const expandButton = item.querySelector('[data-action="expand"]');
+      expandButton.setAttribute("aria-label", `Expand ${getWindowTitle(item)} window`);
+      expandButton.setAttribute("aria-pressed", "false");
+      delete item.dataset.restoreLeft;
+      delete item.dataset.restoreTop;
+      delete item.dataset.restoreTransform;
+    });
+    syncDock();
+  }
+
+  mobileBreakpoint.addEventListener("change", event => {
+    applyMobileMode(event.matches);
+  });
+
+  accentSetting.addEventListener("input", () => {
+    document.documentElement.style.setProperty("--desktop-accent", accentSetting.value);
+    writeSetting(accentKey, accentSetting.value);
+  });
+
+  syncDock();
+})();
