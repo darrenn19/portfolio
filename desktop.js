@@ -42,12 +42,27 @@
   updateClock();
   window.setInterval(updateClock, 15000);
 
-  const appearanceButtons = [...document.querySelectorAll("[data-appearance]")];
+  const appearanceButtons = [...document.querySelectorAll(".appearance-toggle [data-appearance]")];
   const appearanceKey = "portfolio-appearance";
+  let appearanceTimer = 0;
 
   function setAppearance(value, animate = true) {
     const appearance = value === "light" ? "light" : "dark";
+    const previousAppearance = document.documentElement.dataset.appearance || "dark";
     writeSetting(appearanceKey, appearance);
+    document.documentElement.dataset.appearance = appearance;
+
+    if (animate && appearance !== previousAppearance) {
+      window.clearTimeout(appearanceTimer);
+      root.classList.add("is-theme-transitioning");
+      window.dispatchEvent(new CustomEvent("portfolio-theme-transition", {
+        detail: { appearance, duration: 1500 }
+      }));
+      appearanceTimer = window.setTimeout(() => {
+        root.classList.remove("is-theme-transitioning");
+      }, 1500);
+    }
+
     appearanceButtons.forEach(button => {
       const selected = button.dataset.appearance === appearance;
       button.classList.toggle("is-selected", selected);

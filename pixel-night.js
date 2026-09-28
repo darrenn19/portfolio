@@ -96,6 +96,26 @@
     textShadow: "#071923"
   };
 
+  const DAY = {
+    sky0: "#a9d0e3",
+    sky2: "#76b4d0",
+    sky3: "#d5e7c8",
+    starDim: "#a9c6cc",
+    starMid: "#c2d7d2",
+    starBright: "#ecf0d3",
+    cloud: "#b8d5d9",
+    cloud2: "#e2e8d0",
+    lake0: "#397885",
+    lake1: "#57939a",
+    lake2: "#78b0b0",
+    lakeShimmer: "#d7e6ba",
+    sun: "#ffe4a0",
+    sunLight: "#fff2bd",
+    sunReflection: "#ffe7a2",
+    text: "#263b43",
+    wash: "#a9d6e7"
+  };
+
   // ---------------------------------------------------------------
   // Utilities
   // ---------------------------------------------------------------
@@ -108,6 +128,30 @@
 
   function lerp(a, b, t) {
     return a + (b - a) * t;
+  }
+
+  let dayProgress = document.documentElement.dataset.appearance === "light" ? 1 : 0;
+  let transitionFrom = dayProgress;
+  let transitionTo = dayProgress;
+  let transitionStart = 0;
+  let transitionDuration = 0;
+
+  window.addEventListener("portfolio-theme-transition", event => {
+    transitionFrom = dayProgress;
+    transitionTo = event.detail.appearance === "light" ? 1 : 0;
+    transitionStart = performance.now();
+    transitionDuration = Math.max(1, Number(event.detail.duration) || 1500);
+  });
+
+  function updateDayProgress(now) {
+    if (!transitionDuration) return;
+    const linear = clamp((now - transitionStart) / transitionDuration, 0, 1);
+    const eased = linear * linear * (3 - 2 * linear);
+    dayProgress = lerp(transitionFrom, transitionTo, eased);
+    if (linear >= 1) {
+      dayProgress = transitionTo;
+      transitionDuration = 0;
+    }
   }
 
   function hash(n) {
@@ -423,6 +467,9 @@
   function drawSky(t) {
     // Horizontal stepped gradient: 40 bands, not one giant smooth fill.
     const bands = 40;
+    const sky0 = interpolateHex(C.sky0, DAY.sky0, dayProgress);
+    const sky2 = interpolateHex(C.sky2, DAY.sky2, dayProgress);
+    const sky3 = interpolateHex(C.sky3, DAY.sky3, dayProgress);
     for (let i = 0; i < bands; i++) {
       const p = i / (bands - 1);
 
@@ -430,10 +477,10 @@
 
       if (p < 0.65) {
         const q = p / 0.65;
-        color = interpolateHex(C.sky0, C.sky2, clamp(q, 0, 1));
+        color = interpolateHex(sky0, sky2, clamp(q, 0, 1));
       } else {
         const q = (p - 0.65) / 0.35;
-        color = interpolateHex(C.sky2, C.sky3, clamp(q, 0, 1));
+        color = interpolateHex(sky2, sky3, clamp(q, 0, 1));
       }
 
       rect(0, Math.floor(i * H / bands), W, Math.ceil(H / bands) + 1, color);
@@ -475,7 +522,7 @@
   function drawStars(t) {
     for (const s of stars) {
       const tw = 0.72 + Math.sin(t * 0.001 * s.twinkle + s.phase) * 0.28;
-      const alpha = s.a * tw;
+      const alpha = s.a * tw * (1 - dayProgress);
 
       ctx.globalAlpha = alpha;
 
@@ -503,7 +550,7 @@
     ctx.globalAlpha = 1;
 
     // Animated shooting stars.
-    if (Math.random() < 0.006 && shootingStars.length < 2) {
+    if (Math.random() < 0.006 * (1 - dayProgress) && shootingStars.length < 2) {
       shootingStars.push({
         x: 40 + Math.random() * 480,
         y: 25 + Math.random() * 85,
@@ -526,7 +573,7 @@
       const x = s.x + p * s.speed;
       const y = s.y + p * s.speed * 0.35;
 
-      ctx.globalAlpha = Math.max(0, 1 - p);
+      ctx.globalAlpha = Math.max(0, 1 - p) * (1 - dayProgress);
       rect(x, y, 2, 2, C.starBright);
 
       const tail = Math.max(4, Math.floor(s.length * (1 - p)));
@@ -538,6 +585,8 @@
   }
 
   function drawClouds(t) {
+    const cloudColor = interpolateHex(C.cloud, DAY.cloud, dayProgress);
+    const cloudHighlight = interpolateHex(C.cloud2, DAY.cloud2, dayProgress);
     for (const c of clouds) {
       c.x += c.speed * 0.018 * c.side;
       if (c.side < 0 && c.x < -120) c.x = 150;
@@ -549,26 +598,29 @@
       const y = Math.floor(c.y + Math.sin(t * 0.00018 + c.x) * 3);
 
       // Pixel cloud made of stair-stepped blocks.
-      rect(x, y + 5 * s, 34 * s, 5 * s, C.cloud);
-      rect(x + 7 * s, y + 2 * s, 22 * s, 8 * s, C.cloud);
-      rect(x + 13 * s, y, 12 * s, 8 * s, C.cloud2);
-      rect(x + 28 * s, y + 6 * s, 10 * s, 4 * s, C.cloud);
+      rect(x, y + 5 * s, 34 * s, 5 * s, cloudColor);
+      rect(x + 7 * s, y + 2 * s, 22 * s, 8 * s, cloudColor);
+      rect(x + 13 * s, y, 12 * s, 8 * s, cloudHighlight);
+      rect(x + 28 * s, y + 6 * s, 10 * s, 4 * s, cloudColor);
     }
     ctx.globalAlpha = 1;
   }
 
   function drawMoon(t) {
     const cx = 320;
-    const cy = 132;
+    const moonProgress = clamp(dayProgress / 0.55, 0, 1);
+    const cy = lerp(132, 278, moonProgress);
     const r = 33;
+    const moonAlpha = 1 - dayProgress;
+    if (moonAlpha <= 0) return;
     const pulse = 1 + Math.sin(t * 0.0011) * 0.025;
 
     // Stepped halo, intentionally blocky.
-    ctx.globalAlpha = 0.08;
+    ctx.globalAlpha = 0.08 * moonAlpha;
     moonCircle(cx, cy, Math.round(r * 1.65 * pulse), C.moonGlow);
-    ctx.globalAlpha = 0.10;
+    ctx.globalAlpha = 0.10 * moonAlpha;
     moonCircle(cx, cy, Math.round(r * 1.38 * pulse), C.moonGlow);
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = moonAlpha;
 
     // Dark rim / shadow edge.
     moonCircle(cx, cy + 1, r + 2, C.moonCraterDark);
@@ -591,10 +643,31 @@
       const x = Math.round(cx + Math.cos(angle) * distance);
       const y = Math.round(cy + Math.sin(angle) * distance);
       if ((x - cx) ** 2 + (y - cy) ** 2 < (r - 3) ** 2) {
-        ctx.globalAlpha = 0.28 + hash(i * 9.17) * 0.38;
+        ctx.globalAlpha = (0.28 + hash(i * 9.17) * 0.38) * moonAlpha;
         rect(x, y, 1, 1, i % 4 === 0 ? C.moonLight2 : C.moonCrater);
       }
     }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawSun(t) {
+    if (dayProgress <= 0) return;
+    const cx = 320;
+    const sunProgress = clamp((dayProgress - 0.32) / 0.68, 0, 1);
+    const cy = Math.round(lerp(278, 132, sunProgress));
+    const pulse = 1 + Math.sin(t * 0.0011) * 0.018;
+
+    ctx.globalAlpha = dayProgress * 0.12;
+    moonCircle(cx, cy, Math.round(48 * pulse), DAY.sunLight);
+    ctx.globalAlpha = dayProgress * 0.22;
+    moonCircle(cx, cy, Math.round(35 * pulse), DAY.sunLight);
+    ctx.globalAlpha = dayProgress;
+    moonCircle(cx, cy, Math.round(24 * pulse), DAY.sun);
+    ctx.globalAlpha = dayProgress * 0.75;
+    rect(cx - 1, cy - 20, 2, 4, DAY.sunLight);
+    rect(cx - 1, cy + 17, 2, 4, DAY.sunLight);
+    rect(cx - 20, cy - 1, 4, 2, DAY.sunLight);
+    rect(cx + 17, cy - 1, 4, 2, DAY.sunLight);
     ctx.globalAlpha = 1;
   }
 
@@ -656,28 +729,35 @@
   }
 
   function drawLake(t) {
-    rect(0, 254, W, 66, C.lake0);
+    const lake0 = interpolateHex(C.lake0, DAY.lake0, dayProgress);
+    const lake1 = interpolateHex(C.lake1, DAY.lake1, dayProgress);
+    const lake2 = interpolateHex(C.lake2, DAY.lake2, dayProgress);
+    const shimmer = interpolateHex(C.lakeShimmer, DAY.lakeShimmer, dayProgress);
+    const reflectedLight = interpolateHex(C.moonLight2, DAY.sunLight, dayProgress);
+    rect(0, 254, W, 66, lake0);
     rect(0, 254, W, 2, C.ridgeDark);
     for (let x = 0; x < W; x += 16) {
       if (hash(x * 0.73) > 0.3) {
-        rect(x, 256, 5 + Math.floor(hash(x * 1.31) * 8), 1, C.ridgeLight);
+        rect(x, 256, 5 + Math.floor(hash(x * 1.31) * 8), 1, interpolateHex(C.ridgeLight, DAY.lakeShimmer, dayProgress));
       }
     }
-    rect(0, 258, W, 1, C.lake1);
+    rect(0, 258, W, 1, lake1);
 
     // Quiet horizontal water bands; only the reflected light breathes.
     for (let y = 264; y < 320; y += 8) {
       ctx.globalAlpha = 0.18;
-      rect(0, y, W, 1, y % 16 === 0 ? C.lake2 : C.lake1);
+      rect(0, y, W, 1, y % 16 === 0 ? lake2 : lake1);
     }
 
     // A broken, flattened disc gives the reflection the moon's round silhouette.
     const reflectionX = 320;
-    const reflectionY = 270;
-    for (let dy = -15; dy <= 15; dy++) {
-      const normalizedY = dy / 15;
-      const halfWidth = Math.floor(30 * Math.sqrt(Math.max(0, 1 - normalizedY * normalizedY)));
-      const rowAlpha = 0.18 + (1 - Math.abs(normalizedY)) * 0.3;
+    const reflectionY = 270 + Math.round(dayProgress * 4);
+    const reflectionDepth = 15 + Math.round(dayProgress * 6);
+    const reflectionSpread = 30 + dayProgress * 21;
+    for (let dy = -reflectionDepth; dy <= reflectionDepth; dy++) {
+      const normalizedY = dy / reflectionDepth;
+      const halfWidth = Math.floor(reflectionSpread * Math.sqrt(Math.max(0, 1 - normalizedY * normalizedY)));
+      const rowAlpha = 0.18 + (1 - Math.abs(normalizedY)) * (0.3 + dayProgress * 0.12);
       let offsetX = -halfWidth;
       let segment = 0;
 
@@ -696,7 +776,7 @@
         const drawWidth = Math.min(length, halfWidth - offsetX + 1);
 
         ctx.globalAlpha = rowAlpha * (0.75 + hash(key + 29.4) * 0.25);
-        rect(drawX, reflectionY + dy, drawWidth, 1, segment % 4 === 0 ? C.moonLight2 : C.lakeShimmer);
+        rect(drawX, reflectionY + dy, drawWidth, 1, segment % 4 === 0 ? reflectedLight : shimmer);
         offsetX += length + gap;
         segment++;
       }
@@ -709,10 +789,10 @@
       const phase = hash(row * 13.7 + 6.2) * TAU;
       const x = Math.round(reflectionX + Math.sin(t * (0.001 + hash(row * 3.1) * 0.0012) + phase) * (2 + row * 0.25));
       ctx.globalAlpha = 0.5 - row * 0.035;
-      rect(x - width / 2, y, width, row % 3 === 0 ? 2 : 1, C.lakeShimmer);
+      rect(x - width / 2, y, width, row % 3 === 0 ? 2 : 1, shimmer);
       if (row < 6) {
-        rect(x - width - 7, y + 1, 4, 1, C.moonLight2);
-        rect(x + width + 4, y - 1, 5, 1, C.lake2);
+        rect(x - width - 7, y + 1, 4, 1, reflectedLight);
+        rect(x + width + 4, y - 1, 5, 1, lake2);
       }
     }
 
@@ -723,7 +803,7 @@
       const nearReflection = Math.abs(x - 320) < 26 + (y - 263) * 0.55;
       if (!nearReflection && hash(i * 2.19) > 0.3) {
         ctx.globalAlpha = 0.18 + hash(i * 5.11) * 0.14;
-        rect(x, y, 2 + Math.floor(hash(i * 9.7) * 7), 1, C.lakeShimmer);
+        rect(x, y, 2 + Math.floor(hash(i * 9.7) * 7), 1, shimmer);
       }
     }
 
@@ -731,13 +811,17 @@
   }
 
   function drawField(t) {
-    rect(0, 318, W, 42, C.field0);
-    rect(0, 326, W, 34, C.field1);
+    const field0 = interpolateHex(C.field0, "#7e9f92", dayProgress);
+    const field1 = interpolateHex(C.field1, "#90b09c", dayProgress);
+    const field2 = interpolateHex(C.field2, "#a1bea0", dayProgress);
+    const field3 = interpolateHex(C.field3, "#bfd0a0", dayProgress);
+    rect(0, 318, W, 42, field0);
+    rect(0, 326, W, 34, field1);
 
     // Horizontal pixel bands create depth.
     for (let y = 328; y < 360; y += 7) {
       ctx.globalAlpha = 0.16;
-      rect(0, y, W, 2, y % 14 === 0 ? C.field3 : C.field2);
+      rect(0, y, W, 2, y % 14 === 0 ? field3 : field2);
     }
     ctx.globalAlpha = 1;
 
@@ -745,7 +829,7 @@
     for (const f of fireflies) {
       f.x += Math.sin(t * 0.0006 * f.speed + f.phase) * 0.012;
       const yy = f.y + Math.sin(t * 0.0012 + f.phase) * 7;
-      const alpha = 0.25 + (Math.sin(t * 0.0022 + f.phase) + 1) * 0.32;
+      const alpha = (0.25 + (Math.sin(t * 0.0022 + f.phase) + 1) * 0.32) * (1 - dayProgress);
 
       ctx.globalAlpha = alpha;
       rect(Math.round(f.x), Math.round(yy), 2, 2, C.firefly);
@@ -832,6 +916,7 @@
     );
 
     const nameY = nameLines.length > 1 ? 32 : 38;
+    const nameColor = interpolateHex(C.text, DAY.text, dayProgress);
     const safeBottom = 92;
     const nameBlockHeight = () =>
       nameLines.length * 7 * nameScale + (nameLines.length - 1) * 4;
@@ -846,18 +931,22 @@
         W / 2,
         nameY + lineIndex * (7 * nameScale + 4),
         nameScale,
-        C.text,
+        nameColor,
         {
           align: "center",
           gap: nameScale,
-          shadow: 3,
-          glow: true
+          shadow: dayProgress > 0.7 ? 1 : 3,
+          glow: dayProgress < 0.12
         }
       );
     });
 
     // Tiny decorative pixel dash.
-    const pulse = Math.sin(t * 0.003) > 0 ? C.starBright : C.starMid;
+    const pulse = interpolateHex(
+      Math.sin(t * 0.003) > 0 ? C.starBright : C.starMid,
+      DAY.text,
+      dayProgress
+    );
     rect(318, nameY + nameBlockHeight() + 6, 4, 1, pulse);
   }
 
@@ -883,16 +972,23 @@
       return;
     }
     lastDraw = now;
+    updateDayProgress(now);
 
     // Keep canvas coordinate system stable at 640x360.
     drawSky(now);
     drawStars(now);
     drawClouds(now);
     drawMoon(now);
+    drawSun(now);
     drawMountains();
     drawLake(now);
     drawField(now);
     drawFlowers(now);
+    if (dayProgress > 0) {
+      ctx.globalAlpha = dayProgress * 0.14;
+      rect(0, 0, W, H, DAY.wash);
+      ctx.globalAlpha = 1;
+    }
     drawText(now);
 
     raf = requestAnimationFrame(render);
