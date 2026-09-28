@@ -814,25 +814,6 @@
     }
   }
 
-  function formatDateTime(now) {
-    const weekday = new Intl.DateTimeFormat("en-CA", { weekday: "short" })
-      .format(now)
-      .toUpperCase();
-    const month = new Intl.DateTimeFormat("en-CA", { month: "short" })
-      .format(now)
-      .toUpperCase();
-    const day = new Intl.DateTimeFormat("en-CA", { day: "2-digit" })
-      .format(now);
-    const year = now.getFullYear();
-    const time = new Intl.DateTimeFormat("en-CA", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true
-    }).format(now).toUpperCase();
-
-    return `${weekday}  ${month} ${day} ${year}  /  ${time}`;
-  }
-
   function drawText(t) {
     // Name: deliberately large, chunky and pixel-perfect.
     const compactLayout = visibleLogicalWidth < W;
@@ -850,38 +831,14 @@
       candidateScale => candidateScale
     );
 
-    // Compact metadata with extra tracking for a quieter, more polished line.
-    const dateTime = formatDateTime(new Date());
-    const dateLines = compactLayout && visibleLogicalWidth < 152
-      ? dateTime.split(" / ")
-      : [dateTime];
-    let dateScale = fitPixelTextScale(
-      dateLines[0],
-      compactLayout ? 3 : 1,
-      Math.max(5, visibleLogicalWidth - 8),
-      candidateScale => compactLayout ? Math.max(0, candidateScale - 1) : 3
-    );
-    const nameY = nameLines.length > 1 ? 20 : 24;
-    const safeBottom = 70;
-    const verticalGap = 6;
-    const textBlockHeight = () =>
-      nameLines.length * 7 * nameScale + (nameLines.length - 1) * 4 + 3 +
-      verticalGap +
-      dateLines.length * 7 * dateScale + (dateLines.length - 1) * 4 + 1;
+    const nameY = nameLines.length > 1 ? 32 : 38;
+    const safeBottom = 92;
+    const nameBlockHeight = () =>
+      nameLines.length * 7 * nameScale + (nameLines.length - 1) * 4;
 
-    while (nameY + textBlockHeight() > safeBottom && dateScale > 1) {
-      dateScale--;
-    }
-    while (nameY + textBlockHeight() > safeBottom && nameScale > 1) {
+    while (nameY + nameBlockHeight() + 8 > safeBottom && nameScale > 1) {
       nameScale--;
     }
-
-    const dateGap = compactLayout ? Math.max(0, dateScale - 1) : 3;
-    const nameBlockHeight =
-      nameLines.length * 7 * nameScale + (nameLines.length - 1) * 4 + 3;
-    const dateY = nameY + nameBlockHeight + verticalGap;
-    const dateBlockHeight =
-      dateLines.length * 7 * dateScale + (dateLines.length - 1) * 4 + 1;
 
     nameLines.forEach((line, lineIndex) => {
       pixelText(
@@ -899,24 +856,9 @@
       );
     });
 
-    dateLines.forEach((line, lineIndex) => {
-      pixelText(
-        line,
-        W / 2,
-        dateY + lineIndex * (7 * dateScale + 4),
-        dateScale,
-        "#c3d9c2",
-        {
-          align: "center",
-          gap: dateGap,
-          shadow: 1
-        }
-      );
-    });
-
     // Tiny decorative pixel dash.
     const pulse = Math.sin(t * 0.003) > 0 ? C.starBright : C.starMid;
-    rect(318, dateY + dateBlockHeight + 2, 4, 1, pulse);
+    rect(318, nameY + nameBlockHeight() + 6, 4, 1, pulse);
   }
 
   // ---------------------------------------------------------------

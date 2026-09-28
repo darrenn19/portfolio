@@ -27,6 +27,21 @@
     accentSetting.value = savedAccent;
   }
 
+  const clock = document.getElementById("system-clock");
+  const updateClock = () => {
+    const now = new Date();
+    clock.dateTime = now.toISOString();
+    clock.textContent = new Intl.DateTimeFormat(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    }).format(now);
+  };
+  updateClock();
+  window.setInterval(updateClock, 15000);
+
   function syncDock() {
     const openIds = new Set(windows.filter(item => !item.hidden).map(item => item.dataset.window));
     dock.querySelectorAll("[data-target]").forEach(button => {

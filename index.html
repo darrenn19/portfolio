@@ -14,6 +14,25 @@
     <div class="pixel-night__grain"></div>
   </div>
 
+  <header class="system-menubar" aria-label="Desktop system bar">
+    <div class="system-menubar__left">
+      <button class="system-brand" type="button" data-target="about" aria-label="Open About">
+        <span class="system-brand__mark" aria-hidden="true">D</span>
+        <strong>Darren OS</strong>
+      </button>
+      <span class="system-menubar__divider" aria-hidden="true"></span>
+      <span class="system-app-name">Desktop</span>
+      <nav class="system-menus" aria-label="Desktop menus">
+        <span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span>
+      </nav>
+    </div>
+    <div class="system-menubar__status" aria-label="System status">
+      <span class="status-signal" aria-label="Network connected"><i></i><i></i><i></i><i></i></span>
+      <span class="status-battery" aria-label="Battery charged"><i></i></span>
+      <time id="system-clock" class="system-clock"></time>
+    </div>
+  </header>
+
   <main class="desktop" id="desktop" aria-label="Darren's portfolio desktop">
     <section class="portfolio-window" data-window="about" aria-labelledby="about-title" hidden>
       <header class="window-titlebar">
