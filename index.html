@@ -22,9 +22,6 @@
       </button>
       <span class="system-menubar__divider" aria-hidden="true"></span>
       <span class="system-app-name">Desktop</span>
-      <nav class="system-menus" aria-label="Desktop menus">
-        <span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span>
-      </nav>
     </div>
     <div class="system-menubar__status" aria-label="System status">
       <span class="status-signal" aria-label="Network connected"><i></i><i></i><i></i><i></i></span>
@@ -54,11 +51,50 @@
         <span class="window-titlebar__title" id="projects-title">Projects</span>
         <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Projects window"></button>
       </header>
-      <div class="window-content empty-state">
-        <span class="empty-state__pixel" aria-hidden="true"></span>
-        <p class="eyebrow">WORK IN PROGRESS</p>
-        <h1>Projects are on their way.</h1>
-        <p>This space is ready for a project feed. Check back soon.</p>
+      <div class="window-content projects-content">
+        <div class="project-feed" aria-label="Project reels" tabindex="0">
+          <article class="project-reel" aria-label="Project 1 of 3">
+            <header class="reel-heading"><p class="eyebrow">PROJECT / 01</p><span class="reel-label">UNTITLED</span></header>
+            <div class="reel-carousel-shell">
+              <div class="project-gallery" aria-label="Project 1 images and description" tabindex="0">
+                <figure class="project-slide"><div class="project-art project-art--one" aria-hidden="true"><span class="project-art__eyebrow">IMAGE 01 / COVER</span><strong class="project-art__display">01</strong><span class="project-art__caption">PROJECT IMAGE</span></div></figure>
+                <figure class="project-slide"><div class="project-art project-art--one project-art--detail" aria-hidden="true"><span class="project-art__eyebrow">IMAGE 02 / DETAIL</span><strong class="project-art__display">FORM<br>&amp; FIELD</strong><span class="project-art__caption">PROJECT IMAGE</span></div></figure>
+                <section class="project-slide project-slide--notes" aria-label="Project 1 description"><span class="notes-stamp">01</span><div class="project-notes-copy"><p class="eyebrow">PROJECT NOTES</p><h2>Project title</h2><p>Add a short summary of what you made, the problem it solves, and your role.</p></div></section>
+              </div>
+              <button class="gallery-arrow gallery-arrow--previous" type="button" data-gallery-step="-1" aria-label="Previous Project 1 slide">‹</button>
+              <button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Next Project 1 slide">›</button>
+            </div>
+            <footer class="reel-footer"><span>01 / 03</span><span class="gallery-page" aria-live="polite">01 / 03</span></footer>
+          </article>
+
+          <article class="project-reel" aria-label="Project 2 of 3">
+            <header class="reel-heading"><p class="eyebrow">PROJECT / 02</p><span class="reel-label">UNTITLED</span></header>
+            <div class="reel-carousel-shell">
+              <div class="project-gallery" aria-label="Project 2 images and description" tabindex="0">
+                <figure class="project-slide"><div class="project-art project-art--two" aria-hidden="true"><span class="project-art__eyebrow">IMAGE 01 / COVER</span><strong class="project-art__display">02</strong><span class="project-art__caption">PROJECT IMAGE</span></div></figure>
+                <figure class="project-slide"><div class="project-art project-art--two project-art--detail" aria-hidden="true"><span class="project-art__eyebrow">IMAGE 02 / DETAIL</span><strong class="project-art__display">SOFT<br>SYSTEMS</strong><span class="project-art__caption">PROJECT IMAGE</span></div></figure>
+                <section class="project-slide project-slide--notes" aria-label="Project 2 description"><span class="notes-stamp">02</span><div class="project-notes-copy"><p class="eyebrow">PROJECT NOTES</p><h2>Project title</h2><p>Add a short summary of what you made, the problem it solves, and your role.</p></div></section>
+              </div>
+              <button class="gallery-arrow gallery-arrow--previous" type="button" data-gallery-step="-1" aria-label="Previous Project 2 slide">‹</button>
+              <button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Next Project 2 slide">›</button>
+            </div>
+            <footer class="reel-footer"><span>02 / 03</span><span class="gallery-page" aria-live="polite">01 / 03</span></footer>
+          </article>
+
+          <article class="project-reel" aria-label="Project 3 of 3">
+            <header class="reel-heading"><p class="eyebrow">PROJECT / 03</p><span class="reel-label">UNTITLED</span></header>
+            <div class="reel-carousel-shell">
+              <div class="project-gallery" aria-label="Project 3 images and description" tabindex="0">
+                <figure class="project-slide"><div class="project-art project-art--three" aria-hidden="true"><span class="project-art__eyebrow">IMAGE 01 / COVER</span><strong class="project-art__display">03</strong><span class="project-art__caption">PROJECT IMAGE</span></div></figure>
+                <figure class="project-slide"><div class="project-art project-art--three project-art--detail" aria-hidden="true"><span class="project-art__eyebrow">IMAGE 02 / DETAIL</span><strong class="project-art__display">OPEN<br>STUDIES</strong><span class="project-art__caption">PROJECT IMAGE</span></div></figure>
+                <section class="project-slide project-slide--notes" aria-label="Project 3 description"><span class="notes-stamp">03</span><div class="project-notes-copy"><p class="eyebrow">PROJECT NOTES</p><h2>Project title</h2><p>Add a short summary of what you made, the problem it solves, and your role.</p></div></section>
+              </div>
+              <button class="gallery-arrow gallery-arrow--previous" type="button" data-gallery-step="-1" aria-label="Previous Project 3 slide">‹</button>
+              <button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Next Project 3 slide">›</button>
+            </div>
+            <footer class="reel-footer"><span>03 / 03</span><span class="gallery-page" aria-live="polite">01 / 03</span></footer>
+          </article>
+        </div>
       </div>
     </section>
     <section class="portfolio-window" data-window="resume" aria-labelledby="resume-title" hidden>

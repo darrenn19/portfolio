@@ -256,6 +256,7 @@
     const startHeight = bounds.height;
     const fixedRight = startLeft + startWidth;
     const fixedBottom = startTop + startHeight;
+    const menuBottom = document.querySelector(".system-menubar").getBoundingClientRect().bottom;
     let pointerX = startX;
     let pointerY = startY;
     let frame = 0;
@@ -276,11 +277,11 @@
       const widthDelta = direction.includes("e") ? deltaX : direction.includes("w") ? -deltaX : 0;
       const heightDelta = direction.includes("s") ? deltaY : direction.includes("n") ? -deltaY : 0;
       const maxWidth = direction.includes("w") ? fixedRight : window.innerWidth - startLeft;
-      const maxHeight = direction.includes("n") ? fixedBottom : window.innerHeight - startTop;
+      const maxHeight = direction.includes("n") ? fixedBottom - menuBottom : window.innerHeight - startTop;
       const width = Math.max(320, Math.min(maxWidth, startWidth + widthDelta));
-      const height = Math.max(260, Math.min(maxHeight, startHeight + heightDelta));
+      const height = Math.max(Math.min(260, maxHeight), Math.min(maxHeight, startHeight + heightDelta));
       const left = direction.includes("w") ? fixedRight - width : startLeft;
-      const top = direction.includes("n") ? fixedBottom - height : startTop;
+      const top = direction.includes("n") ? Math.max(menuBottom, fixedBottom - height) : startTop;
 
       windowElement.style.left = `${left}px`;
       windowElement.style.top = `${top}px`;
@@ -315,8 +316,26 @@
     return windowElement.querySelector(".window-titlebar__title").textContent.trim();
   }
 
+  function fitExpandedProject(windowElement) {
+    const menuBottom = document.querySelector(".system-menubar").getBoundingClientRect().bottom;
+    const dockTop = dock.getBoundingClientRect().top;
+    const maxWidth = Math.max(0, window.innerWidth - 32);
+    const availableHeight = Math.max(0, dockTop - menuBottom - 8);
+    const height = Math.min(746, availableHeight, maxWidth * 16 / 9);
+
+    windowElement.style.top = `${menuBottom + 8}px`;
+    windowElement.style.left = "50%";
+    windowElement.style.width = `${height * 9 / 16}px`;
+    windowElement.style.height = `${height}px`;
+    windowElement.style.transform = "translateX(-50%)";
+  }
+
   function toggleExpanded(windowElement, button) {
     const title = getWindowTitle(windowElement);
+    windowElement.getAnimations().forEach(animation => animation.cancel());
+    openingAnimations.delete(windowElement);
+    windowElement.classList.remove("is-opening");
+
     if (windowElement.classList.contains("is-expanded")) {
       windowElement.classList.remove("is-expanded");
       windowElement.style.left = windowElement.dataset.restoreLeft || "";
@@ -345,6 +364,9 @@
     windowElement.style.height = "";
     windowElement.style.transform = "";
     windowElement.classList.add("is-expanded");
+    if (windowElement.classList.contains("projects-window")) {
+      fitExpandedProject(windowElement);
+    }
     button.setAttribute("aria-label", `Restore ${title} window size`);
     button.setAttribute("aria-pressed", "true");
   }
@@ -409,6 +431,31 @@
     if (button) openWindow(button.dataset.target);
   });
 
+  const projectsWindow = document.querySelector(".projects-window");
+  projectsWindow.addEventListener("click", event => {
+    const button = event.target.closest("[data-gallery-step]");
+    if (!button) return;
+    const gallery = button.closest(".reel-carousel-shell").querySelector(".project-gallery");
+    gallery.scrollBy({
+      left: Number(button.dataset.galleryStep) * gallery.clientWidth,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    });
+  });
+
+  projectsWindow.querySelectorAll(".project-gallery").forEach(gallery => {
+    let scrollFrame = 0;
+    gallery.addEventListener("scroll", () => {
+      if (scrollFrame) return;
+      scrollFrame = requestAnimationFrame(() => {
+        const currentSlide = Math.round(gallery.scrollLeft / gallery.clientWidth) + 1;
+        const totalSlides = gallery.children.length;
+        const counter = gallery.closest(".project-reel").querySelector(".gallery-page");
+        counter.textContent = `${String(currentSlide).padStart(2, "0")} / ${String(totalSlides).padStart(2, "0")}`;
+        scrollFrame = 0;
+      });
+    }, { passive: true });
+  });
+
   windows.forEach(windowElement => {
     windowElement.tabIndex = -1;
     addResizeHandles(windowElement);
@@ -438,6 +485,7 @@
       const startTop = bounds.top;
       const windowWidth = bounds.width;
       const windowHeight = bounds.height;
+      const menuBottom = document.querySelector(".system-menubar").getBoundingClientRect().bottom;
       windowElement.style.left = `${startLeft}px`;
       windowElement.style.top = `${startTop}px`;
       windowElement.style.transform = "translate3d(0, 0, 0)";
@@ -454,9 +502,9 @@
 
       const applyDrag = () => {
         const maxLeft = Math.max(0, window.innerWidth - windowWidth);
-        const maxTop = Math.max(0, window.innerHeight - windowHeight);
+        const maxTop = Math.max(menuBottom, window.innerHeight - windowHeight);
         finalLeft = Math.max(0, Math.min(maxLeft, startLeft + latestX - startX));
-        finalTop = Math.max(0, Math.min(maxTop, startTop + latestY - startY));
+        finalTop = Math.max(menuBottom, Math.min(maxTop, startTop + latestY - startY));
         windowElement.style.transform = `translate3d(${finalLeft - startLeft}px, ${finalTop - startTop}px, 0)`;
         frame = 0;
       };
@@ -486,6 +534,14 @@
     });
 
   });
+
+  window.addEventListener("resize", () => {
+    windows.forEach(windowElement => {
+      if (windowElement.classList.contains("projects-window") && windowElement.classList.contains("is-expanded")) {
+        fitExpandedProject(windowElement);
+      }
+    });
+  }, { passive: true });
 
   function applyMobileMode(enabled) {
     root.classList.toggle("is-mobile-mode", enabled);
