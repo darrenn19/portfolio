@@ -42,6 +42,50 @@
   updateClock();
   window.setInterval(updateClock, 15000);
 
+  const appearanceButtons = [...document.querySelectorAll("[data-appearance]")];
+  const appearanceKey = "portfolio-appearance";
+
+  function setAppearance(value, animate = true) {
+    const appearance = value === "light" ? "light" : "dark";
+    writeSetting(appearanceKey, appearance);
+    appearanceButtons.forEach(button => {
+      const selected = button.dataset.appearance === appearance;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+      if (selected && animate) {
+        const icon = button.querySelector(".appearance-icon");
+        icon.classList.remove("is-animating");
+        void icon.offsetWidth;
+        icon.classList.add("is-animating");
+      }
+    });
+  }
+
+  setAppearance(readSetting(appearanceKey) || "dark", false);
+  appearanceButtons.forEach(button => {
+    button.addEventListener("click", () => setAppearance(button.dataset.appearance));
+  });
+
+  const fullscreenToggle = document.getElementById("fullscreen-toggle");
+  const fullscreenExit = document.getElementById("fullscreen-exit");
+
+  function setFullscreenView(enabled) {
+    root.classList.toggle("is-fullscreen-view", enabled);
+    fullscreenExit.hidden = !enabled;
+    fullscreenToggle.setAttribute("aria-pressed", String(enabled));
+    fullscreenToggle.setAttribute("aria-label", enabled ? "Exit full screen" : "Enter full screen");
+  }
+
+  fullscreenToggle.addEventListener("click", () => {
+    setFullscreenView(!root.classList.contains("is-fullscreen-view"));
+  });
+  fullscreenExit.addEventListener("click", () => setFullscreenView(false));
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && root.classList.contains("is-fullscreen-view")) {
+      setFullscreenView(false);
+    }
+  });
+
   function syncDock() {
     const openIds = new Set(windows.filter(item => !item.hidden).map(item => item.dataset.window));
     dock.querySelectorAll("[data-target]").forEach(button => {

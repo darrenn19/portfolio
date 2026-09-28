@@ -22,6 +22,15 @@
       </button>
       <span class="system-menubar__divider" aria-hidden="true"></span>
       <span class="system-app-name">Desktop</span>
+      <div class="appearance-toggle" role="group" aria-label="Appearance preference">
+        <button type="button" data-appearance="dark" aria-label="Choose dark appearance" aria-pressed="true" title="Dark">
+          <span class="appearance-icon appearance-icon--moon" aria-hidden="true">☾</span>
+        </button>
+        <button type="button" data-appearance="light" aria-label="Choose light appearance" aria-pressed="false" title="Light">
+          <span class="appearance-icon appearance-icon--sun" aria-hidden="true">☀</span>
+        </button>
+      </div>
+      <button id="fullscreen-toggle" class="fullscreen-toggle" type="button" aria-label="Enter full screen" title="Full screen"><span class="fullscreen-glyph" aria-hidden="true"></span></button>
     </div>
     <div class="system-menubar__status" aria-label="System status">
       <span class="status-signal" aria-label="Network connected"><i></i><i></i><i></i><i></i></span>
@@ -29,6 +38,10 @@
       <time id="system-clock" class="system-clock"></time>
     </div>
   </header>
+
+  <button id="fullscreen-exit" class="fullscreen-exit" type="button" aria-label="Exit full screen" title="Exit full screen" hidden>
+    <span aria-hidden="true">×</span>
+  </button>
 
   <main class="desktop" id="desktop" aria-label="Darren's portfolio desktop">
     <section class="portfolio-window" data-window="about" aria-labelledby="about-title" hidden>
