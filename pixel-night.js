@@ -131,6 +131,8 @@
   }
 
   let dayProgress = document.documentElement.dataset.appearance === "light" ? 1 : 0;
+  let animationsEnabled = !document.body.classList.contains("animations-disabled");
+  document.documentElement.style.setProperty("--day-progress", `${dayProgress * 100}%`);
   let transitionFrom = dayProgress;
   let transitionTo = dayProgress;
   let transitionStart = 0;
@@ -140,7 +142,18 @@
     transitionFrom = dayProgress;
     transitionTo = event.detail.appearance === "light" ? 1 : 0;
     transitionStart = performance.now();
-    transitionDuration = Math.max(1, Number(event.detail.duration) || 1500);
+    const requestedDuration = Number(event.detail.duration);
+    if (!animationsEnabled || requestedDuration <= 0) {
+      dayProgress = transitionTo;
+      transitionDuration = 0;
+      document.documentElement.style.setProperty("--day-progress", `${dayProgress * 100}%`);
+      if (running) {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(render);
+      }
+      return;
+    }
+    transitionDuration = requestedDuration || 1500;
   });
 
   function updateDayProgress(now) {
@@ -152,6 +165,7 @@
       dayProgress = transitionTo;
       transitionDuration = 0;
     }
+    document.documentElement.style.setProperty("--day-progress", `${dayProgress * 100}%`);
   }
 
   function hash(n) {
@@ -960,6 +974,18 @@
   let lastDraw = 0;
   let fpsTime = 0;
 
+  window.addEventListener("portfolio-animations-change", event => {
+    animationsEnabled = Boolean(event.detail.enabled);
+    cancelAnimationFrame(raf);
+    if (!animationsEnabled && transitionDuration) {
+      dayProgress = transitionTo;
+      transitionDuration = 0;
+      document.documentElement.style.setProperty("--day-progress", `${dayProgress * 100}%`);
+    }
+    last = performance.now();
+    if (running) raf = requestAnimationFrame(render);
+  });
+
   function render(now) {
     if (!running) return;
 
@@ -967,7 +993,7 @@
     last = now;
     fpsTime += dt;
 
-    if (document.body.classList.contains("is-window-dragging") && now - lastDraw < 1000 / 30) {
+    if (animationsEnabled && document.body.classList.contains("is-window-dragging") && now - lastDraw < 1000 / 30) {
       raf = requestAnimationFrame(render);
       return;
     }
@@ -991,7 +1017,7 @@
     }
     drawText(now);
 
-    raf = requestAnimationFrame(render);
+    if (animationsEnabled) raf = requestAnimationFrame(render);
   }
 
   // Stop animation while the tab is hidden; restart when visible.

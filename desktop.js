@@ -4,12 +4,17 @@
   const root = document.body;
   const dock = document.querySelector(".desktop-dock");
   const windows = [...document.querySelectorAll(".portfolio-window")];
-  const accentSetting = document.getElementById("accent-color");
+  const accentButtons = [...document.querySelectorAll(".accent-swatch")];
+  const animationsSetting = document.getElementById("disable-animations");
+  const settingsToggle = document.getElementById("desktop-settings-toggle");
+  const settingsPopover = document.getElementById("desktop-settings-popover");
   const accentKey = "portfolio-accent";
+  const animationsKey = "portfolio-animations-disabled";
   const mobileBreakpoint = window.matchMedia("(max-width: 767px)");
   const openingAnimations = new WeakMap();
   let openCount = 0;
   let focusedWindow = null;
+  let animationsDisabled = readSetting(animationsKey) === "true";
 
   function readSetting(key) {
     try { return localStorage.getItem(key); } catch { return null; }
@@ -19,13 +24,88 @@
     try { localStorage.setItem(key, value); } catch { /* Session-only fallback. */ }
   }
 
-  root.classList.toggle("is-mobile-mode", mobileBreakpoint.matches);
+  function setAccent(value) {
+    const selected = accentButtons.find(button => button.dataset.accent === value) || accentButtons[0];
+    document.documentElement.style.setProperty("--desktop-accent", selected.dataset.accent);
+    writeSetting(accentKey, selected.dataset.accent);
+    accentButtons.forEach(button => {
+      const isSelected = button === selected;
+      button.classList.toggle("is-selected", isSelected);
+      button.setAttribute("aria-checked", String(isSelected));
+      button.tabIndex = isSelected ? 0 : -1;
+    });
+  }
 
   const savedAccent = readSetting(accentKey);
-  if (savedAccent && /^#[0-9a-f]{6}$/i.test(savedAccent)) {
-    document.documentElement.style.setProperty("--desktop-accent", savedAccent);
-    accentSetting.value = savedAccent;
+  setAccent(accentButtons.some(button => button.dataset.accent === savedAccent) ? savedAccent : "#e6c878");
+  accentButtons.forEach(button => {
+    button.addEventListener("click", () => setAccent(button.dataset.accent));
+  });
+
+  document.querySelector(".accent-swatches").addEventListener("keydown", event => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = accentButtons.indexOf(document.activeElement);
+    const step = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
+    const nextIndex = (currentIndex + step + accentButtons.length) % accentButtons.length;
+    accentButtons[nextIndex].focus();
+    accentButtons[nextIndex].click();
+  });
+
+  root.classList.toggle("is-mobile-mode", mobileBreakpoint.matches);
+  root.classList.toggle("animations-disabled", animationsDisabled);
+  animationsSetting.checked = animationsDisabled;
+
+  function positionSettingsPopover() {
+    if (settingsPopover.hidden) return;
+    const anchor = settingsToggle.getBoundingClientRect();
+    const width = settingsPopover.getBoundingClientRect().width;
+    const left = Math.max(8, Math.min(anchor.left, window.innerWidth - width - 8));
+    settingsPopover.style.left = `${left}px`;
+    settingsPopover.style.top = `${anchor.bottom + 6}px`;
   }
+
+  function setSettingsPopoverOpen(open) {
+    settingsPopover.hidden = !open;
+    settingsToggle.setAttribute("aria-expanded", String(open));
+    if (open) {
+      positionSettingsPopover();
+      settingsPopover.classList.add("is-open");
+    } else {
+      settingsPopover.classList.remove("is-open");
+    }
+  }
+
+  settingsToggle.addEventListener("click", () => {
+    setSettingsPopoverOpen(settingsPopover.hidden);
+  });
+  settingsPopover.querySelector(".desktop-settings-popover__close").addEventListener("click", () => {
+    setSettingsPopoverOpen(false);
+    settingsToggle.focus();
+  });
+  document.addEventListener("pointerdown", event => {
+    if (settingsPopover.hidden || settingsPopover.contains(event.target) || settingsToggle.contains(event.target)) return;
+    setSettingsPopoverOpen(false);
+  });
+  window.addEventListener("resize", positionSettingsPopover, { passive: true });
+
+  function setAnimationsDisabled(disabled) {
+    animationsDisabled = disabled;
+    root.classList.toggle("animations-disabled", disabled);
+    animationsSetting.checked = disabled;
+    writeSetting(animationsKey, String(disabled));
+    window.dispatchEvent(new CustomEvent("portfolio-animations-change", {
+      detail: { enabled: !disabled }
+    }));
+    if (disabled) {
+      window.clearTimeout(appearanceTimer);
+      root.classList.remove("is-theme-transitioning");
+    }
+  }
+
+  animationsSetting.addEventListener("change", () => {
+    setAnimationsDisabled(animationsSetting.checked);
+  });
 
   const clock = document.getElementById("system-clock");
   const updateClock = () => {
@@ -49,6 +129,7 @@
   function setAppearance(value, animate = true) {
     const appearance = value === "light" ? "light" : "dark";
     const previousAppearance = document.documentElement.dataset.appearance || "dark";
+    const motionDisabled = animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isLight = appearance === "light";
     appearanceToggle.classList.toggle("is-light", isLight);
     appearanceToggle.setAttribute("aria-checked", String(isLight));
@@ -61,18 +142,31 @@
     }
 
     window.clearTimeout(appearanceTimer);
-    appearanceToggle.classList.remove("is-animating");
-    void appearanceToggle.offsetWidth;
-    appearanceToggle.classList.add("is-animating");
-    root.classList.add("is-theme-transitioning");
+    if (motionDisabled) {
+      appearanceToggle.classList.remove("is-animating");
+      root.classList.remove("is-theme-transitioning");
+      document.documentElement.dataset.appearance = appearance;
+      writeSetting(appearanceKey, appearance);
+      window.dispatchEvent(new CustomEvent("portfolio-theme-transition", {
+        detail: { appearance, duration: 0 }
+      }));
+      return;
+    } else {
+      appearanceToggle.classList.remove("is-animating");
+      void appearanceToggle.offsetWidth;
+      appearanceToggle.classList.add("is-animating");
+      root.classList.add("is-theme-transitioning");
+    }
     document.documentElement.dataset.appearance = appearance;
     writeSetting(appearanceKey, appearance);
     window.dispatchEvent(new CustomEvent("portfolio-theme-transition", {
-      detail: { appearance, duration: 1500 }
+      detail: { appearance, duration: motionDisabled ? 0 : 1500 }
     }));
-    appearanceTimer = window.setTimeout(() => {
-      root.classList.remove("is-theme-transitioning");
-    }, 1500);
+    if (!motionDisabled) {
+      appearanceTimer = window.setTimeout(() => {
+        root.classList.remove("is-theme-transitioning");
+      }, 1500);
+    }
   }
 
   setAppearance(readSetting(appearanceKey) || "dark", false);
@@ -84,6 +178,7 @@
   const fullscreenExit = document.getElementById("fullscreen-exit");
 
   function setFullscreenView(enabled) {
+    if (enabled) setSettingsPopoverOpen(false);
     root.classList.toggle("is-fullscreen-view", enabled);
     fullscreenExit.hidden = !enabled;
     fullscreenToggle.setAttribute("aria-pressed", String(enabled));
@@ -95,6 +190,10 @@
   });
   fullscreenExit.addEventListener("click", () => setFullscreenView(false));
   document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !settingsPopover.hidden) {
+      setSettingsPopoverOpen(false);
+      settingsToggle.focus();
+    }
     if (event.key === "Escape" && root.classList.contains("is-fullscreen-view")) {
       setFullscreenView(false);
     }
@@ -155,82 +254,7 @@
   }
 
   function playGenieOpen(windowElement, origin) {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      windowElement.classList.remove("is-opening");
-      return;
-    }
-
-    openingAnimations.get(windowElement)?.cancel();
-    windowElement.classList.add("is-opening");
-    const x = origin.xPercent;
-    const y = origin.yPercent;
-    const clamp = value => Math.max(0, Math.min(100, value));
-    const collapsed = makePolygon(Array.from({ length: 8 }, () => [x, y]));
-    const funnel = makePolygon([
-      [0, 0], [100, 0], [100, 52], [clamp(x + 34), 76],
-      [clamp(x + 7), 100], [clamp(x - 7), 100], [clamp(x - 34), 76], [0, 52]
-    ]);
-    const widening = makePolygon([
-      [0, 0], [100, 0], [100, 76], [clamp(x + 72), 90],
-      [clamp(x + 36), 100], [clamp(x - 36), 100], [clamp(x - 72), 90], [0, 76]
-    ]);
-    const full = makePolygon([
-      [0, 0], [50, 0], [100, 0], [100, 50],
-      [100, 100], [50, 100], [0, 100], [0, 50]
-    ]);
-    const restTransform = windowElement.style.getPropertyValue("--window-rest-transform");
-    const animation = windowElement.animate([
-      {
-        opacity: 0.8,
-        clipPath: collapsed,
-        transformOrigin: `${origin.x}px ${origin.y}px`,
-        transform: `${restTransform} scale(0.015, 0.02)`
-      },
-      {
-        offset: 0.32,
-        opacity: 1,
-        clipPath: funnel,
-        transform: `${restTransform} scale(0.12, 0.82)`
-      },
-      {
-        offset: 0.76,
-        clipPath: widening,
-        transform: `${restTransform} scale(1.025, 1.015)`
-      },
-      {
-        opacity: 1,
-        clipPath: full,
-        transform: `${restTransform} scale(1, 1)`
-      }
-    ], {
-      duration: 420,
-      easing: "cubic-bezier(0.18, 0.86, 0.24, 1)",
-      fill: "both"
-    });
-
-    openingAnimations.set(windowElement, animation);
-    animation.addEventListener("finish", () => {
-      if (openingAnimations.get(windowElement) === animation) {
-        openingAnimations.delete(windowElement);
-        windowElement.classList.remove("is-opening");
-        animation.cancel();
-      }
-    }, { once: true });
-
-    return {
-      x: iconX,
-      y: iconY,
-      xPercent: iconX / windowBounds.width * 100,
-      yPercent: iconY / windowBounds.height * 100
-    };
-  }
-
-  function makePolygon(points) {
-    return `polygon(${points.map(([x, y]) => `${x}% ${y}%`).join(", ")})`;
-  }
-
-  function playGenieOpen(windowElement, origin) {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       windowElement.classList.remove("is-opening");
       return;
     }
@@ -496,7 +520,7 @@
     const gallery = button.closest(".reel-carousel-shell").querySelector(".project-gallery");
     gallery.scrollBy({
       left: Number(button.dataset.galleryStep) * gallery.clientWidth,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+      behavior: animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
     });
   });
 
@@ -639,11 +663,6 @@
 
   mobileBreakpoint.addEventListener("change", event => {
     applyMobileMode(event.matches);
-  });
-
-  accentSetting.addEventListener("input", () => {
-    document.documentElement.style.setProperty("--desktop-accent", accentSetting.value);
-    writeSetting(accentKey, accentSetting.value);
   });
 
   syncDock();

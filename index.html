@@ -16,7 +16,7 @@
 
   <header class="system-menubar" aria-label="Desktop system bar">
     <div class="system-menubar__left">
-      <button class="system-brand" type="button" data-target="about" aria-label="Open About">
+      <button id="desktop-settings-toggle" class="system-brand" type="button" aria-label="Open desktop settings" aria-controls="desktop-settings-popover" aria-expanded="false" title="Desktop settings">
         <span class="system-brand__mark" aria-hidden="true">D</span>
       </button>
       <span class="system-menubar__divider system-menubar__divider--appearance" aria-hidden="true"></span>
@@ -32,6 +32,28 @@
       <button id="fullscreen-toggle" class="fullscreen-toggle" type="button" aria-label="Enter full screen" title="Full screen"><span class="fullscreen-glyph" aria-hidden="true"></span></button>
     </div>
   </header>
+
+  <section id="desktop-settings-popover" class="desktop-settings-popover" aria-labelledby="desktop-settings-title" hidden>
+    <header class="desktop-settings-popover__header">
+      <h2 id="desktop-settings-title">Desktop settings</h2>
+      <button class="desktop-settings-popover__close" type="button" aria-label="Close desktop settings">×</button>
+    </header>
+    <div class="setting-row accent-setting-row">
+      <span><strong>Accent color</strong><small>Choose a desktop highlight.</small></span>
+      <div class="accent-swatches" role="radiogroup" aria-label="Accent color">
+        <button class="accent-swatch is-selected" type="button" role="radio" data-accent="#e6c878" aria-label="Gold" aria-checked="true" title="Gold" style="--swatch-color: #e6c878"></button>
+        <button class="accent-swatch" type="button" role="radio" data-accent="#d98e72" aria-label="Coral" aria-checked="false" title="Coral" style="--swatch-color: #d98e72"></button>
+        <button class="accent-swatch" type="button" role="radio" data-accent="#8fb39a" aria-label="Sage" aria-checked="false" title="Sage" style="--swatch-color: #8fb39a"></button>
+        <button class="accent-swatch" type="button" role="radio" data-accent="#79aabd" aria-label="Sky" aria-checked="false" title="Sky" style="--swatch-color: #79aabd"></button>
+        <button class="accent-swatch" type="button" role="radio" data-accent="#cf7f98" aria-label="Rose" aria-checked="false" title="Rose" style="--swatch-color: #cf7f98"></button>
+        <button class="accent-swatch" type="button" role="radio" data-accent="#8c88bb" aria-label="Lilac" aria-checked="false" title="Lilac" style="--swatch-color: #8c88bb"></button>
+      </div>
+    </div>
+    <label class="setting-row" for="disable-animations">
+      <span><strong>Disable animations</strong><small>Pause motion across the desktop.</small></span>
+      <input id="disable-animations" type="checkbox">
+    </label>
+  </section>
 
   <button id="fullscreen-exit" class="fullscreen-exit" type="button" aria-label="Exit full screen" title="Exit full screen" hidden>
     <span aria-hidden="true">×</span>
@@ -104,16 +126,16 @@
         </div>
       </div>
     </section>
-    <section class="portfolio-window" data-window="resume" aria-labelledby="resume-title" hidden>
+    <section class="portfolio-window" data-window="achievements" aria-labelledby="achievements-title" hidden>
       <header class="window-titlebar">
-        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand Resume window" aria-pressed="false"></button>
-        <span class="window-titlebar__title" id="resume-title">Resume</span>
-        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Resume window"></button>
+        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand Achievements window" aria-pressed="false"></button>
+        <span class="window-titlebar__title" id="achievements-title">Achievements</span>
+        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Achievements window"></button>
       </header>
       <div class="window-content empty-state">
-        <p class="eyebrow">EXPERIENCE &amp; AWARDS</p>
-        <h1>The next chapter.</h1>
-        <p>Experience, volunteering, and awards will be collected here.</p>
+        <p class="eyebrow">EXPERIENCE / AWARDS</p>
+        <h1>Selected highlights.</h1>
+        <p>Work, volunteering, hackathons, and awards will be collected here.</p>
       </div>
     </section>
     <section class="portfolio-window" data-window="contact" aria-labelledby="contact-title" hidden>
@@ -128,28 +150,13 @@
         <p>Contact links will live here soon.</p>
       </div>
     </section>
-    <section class="portfolio-window settings-window" data-window="settings" aria-labelledby="settings-title" hidden>
-      <header class="window-titlebar">
-        <button class="window-control window-control--expand" type="button" data-action="expand" aria-label="Expand Settings window" aria-pressed="false"></button>
-        <span class="window-titlebar__title" id="settings-title">Settings</span>
-        <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Settings window"></button>
-      </header>
-      <div class="window-content settings-content">
-        <p class="eyebrow">DESKTOP PREFERENCES</p>
-        <label class="setting-row" for="accent-color">
-          <span><strong>Accent color</strong><small>Change the desktop highlight.</small></span>
-          <input id="accent-color" type="color" value="#e6c878">
-        </label>
-      </div>
-    </section>
   </main>
 
   <nav class="desktop-dock" aria-label="Portfolio sections">
     <button class="dock-item" type="button" data-target="about" aria-label="Open About" title="About"><span class="dock-icon dock-icon--about" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
     <button class="dock-item" type="button" data-target="projects" aria-label="Open Projects" title="Projects"><span class="dock-icon dock-icon--projects" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
-    <button class="dock-item" type="button" data-target="resume" aria-label="Open Resume" title="Resume"><span class="dock-icon dock-icon--resume" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
+    <button class="dock-item" type="button" data-target="achievements" aria-label="Open Achievements" title="Achievements"><span class="dock-icon dock-icon--achievements" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
     <button class="dock-item" type="button" data-target="contact" aria-label="Open Contact" title="Contact"><span class="dock-icon dock-icon--contact" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
-    <button class="dock-item" type="button" data-target="settings" aria-label="Open Settings" title="Settings"><span class="dock-icon dock-icon--settings" aria-hidden="true"></span><span class="dock-indicator" aria-hidden="true"></span></button>
   </nav>
 
   <script src="desktop.js"></script>
