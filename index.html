@@ -19,20 +19,17 @@
       <button class="system-brand" type="button" data-target="about" aria-label="Open About">
         <span class="system-brand__mark" aria-hidden="true">D</span>
       </button>
-      <div class="appearance-toggle" role="group" aria-label="Appearance preference">
-        <button type="button" data-appearance="dark" aria-label="Choose dark appearance" aria-pressed="true" title="Dark">
-          <span class="appearance-icon appearance-icon--moon" aria-hidden="true">☾</span>
-        </button>
-        <button type="button" data-appearance="light" aria-label="Choose light appearance" aria-pressed="false" title="Light">
-          <span class="appearance-icon appearance-icon--sun" aria-hidden="true">☀</span>
-        </button>
-      </div>
-      <button id="fullscreen-toggle" class="fullscreen-toggle" type="button" aria-label="Enter full screen" title="Full screen"><span class="fullscreen-glyph" aria-hidden="true"></span></button>
+      <span class="system-menubar__divider system-menubar__divider--appearance" aria-hidden="true"></span>
+      <button id="appearance-toggle" class="appearance-toggle" type="button" role="switch" aria-label="Light appearance" aria-checked="false" title="Toggle light appearance">
+        <span class="appearance-icon appearance-icon--moon" aria-hidden="true">☾</span>
+        <span class="appearance-icon appearance-icon--sun" aria-hidden="true">☀</span>
+        <span class="appearance-toggle__thumb" aria-hidden="true"></span>
+      </button>
     </div>
     <div class="system-menubar__status" aria-label="System status">
-      <span class="status-signal" aria-label="Network connected"><i></i><i></i><i></i><i></i></span>
-      <span class="status-battery" aria-label="Battery charged"><i></i></span>
       <time id="system-clock" class="system-clock"></time>
+      <span class="system-menubar__divider system-menubar__divider--status" aria-hidden="true"></span>
+      <button id="fullscreen-toggle" class="fullscreen-toggle" type="button" aria-label="Enter full screen" title="Full screen"><span class="fullscreen-glyph" aria-hidden="true"></span></button>
     </div>
   </header>
 

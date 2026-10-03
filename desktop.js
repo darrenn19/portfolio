@@ -31,54 +31,53 @@
   const updateClock = () => {
     const now = new Date();
     clock.dateTime = now.toISOString();
+    const compact = window.matchMedia("(max-width: 380px)").matches;
     clock.textContent = new Intl.DateTimeFormat(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
+      ...(compact ? { month: "numeric", day: "numeric" } : { weekday: "short", month: "short", day: "numeric" }),
       hour: "numeric",
       minute: "2-digit"
     }).format(now);
   };
   updateClock();
+  window.addEventListener("resize", updateClock, { passive: true });
   window.setInterval(updateClock, 15000);
 
-  const appearanceButtons = [...document.querySelectorAll(".appearance-toggle [data-appearance]")];
+  const appearanceToggle = document.getElementById("appearance-toggle");
   const appearanceKey = "portfolio-appearance";
   let appearanceTimer = 0;
 
   function setAppearance(value, animate = true) {
     const appearance = value === "light" ? "light" : "dark";
     const previousAppearance = document.documentElement.dataset.appearance || "dark";
-    writeSetting(appearanceKey, appearance);
-    document.documentElement.dataset.appearance = appearance;
+    const isLight = appearance === "light";
+    appearanceToggle.classList.toggle("is-light", isLight);
+    appearanceToggle.setAttribute("aria-checked", String(isLight));
+    appearanceToggle.setAttribute("aria-label", `${isLight ? "Light" : "Dark"} appearance`);
 
-    if (animate && appearance !== previousAppearance) {
-      window.clearTimeout(appearanceTimer);
-      root.classList.add("is-theme-transitioning");
-      window.dispatchEvent(new CustomEvent("portfolio-theme-transition", {
-        detail: { appearance, duration: 1500 }
-      }));
-      appearanceTimer = window.setTimeout(() => {
-        root.classList.remove("is-theme-transitioning");
-      }, 1500);
+    if (!animate || appearance === previousAppearance) {
+      writeSetting(appearanceKey, appearance);
+      document.documentElement.dataset.appearance = appearance;
+      return;
     }
 
-    appearanceButtons.forEach(button => {
-      const selected = button.dataset.appearance === appearance;
-      button.classList.toggle("is-selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-      if (selected && animate) {
-        const icon = button.querySelector(".appearance-icon");
-        icon.classList.remove("is-animating");
-        void icon.offsetWidth;
-        icon.classList.add("is-animating");
-      }
-    });
+    window.clearTimeout(appearanceTimer);
+    appearanceToggle.classList.remove("is-animating");
+    void appearanceToggle.offsetWidth;
+    appearanceToggle.classList.add("is-animating");
+    root.classList.add("is-theme-transitioning");
+    document.documentElement.dataset.appearance = appearance;
+    writeSetting(appearanceKey, appearance);
+    window.dispatchEvent(new CustomEvent("portfolio-theme-transition", {
+      detail: { appearance, duration: 1500 }
+    }));
+    appearanceTimer = window.setTimeout(() => {
+      root.classList.remove("is-theme-transitioning");
+    }, 1500);
   }
 
   setAppearance(readSetting(appearanceKey) || "dark", false);
-  appearanceButtons.forEach(button => {
-    button.addEventListener("click", () => setAppearance(button.dataset.appearance));
+  appearanceToggle.addEventListener("click", () => {
+    setAppearance(appearanceToggle.classList.contains("is-light") ? "dark" : "light");
   });
 
   const fullscreenToggle = document.getElementById("fullscreen-toggle");

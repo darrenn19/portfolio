@@ -164,42 +164,40 @@ body.has-open-window .pixel-night::after { opacity: 1; }
 .system-brand__mark { display: grid; width: 19px; height: 19px; place-items: center; border: 1px solid rgba(241, 237, 218, 0.62); background: #e6c878; color: #172c2c; font-size: 12px; font-weight: 700; }
 .system-menubar__divider { width: 1px; height: 17px; flex: 0 0 1px; background: color-mix(in srgb, var(--system-bar-foreground) 32%, transparent); }
 .system-app-name { font-weight: 700; }
-.system-menubar__status { flex: 0 0 auto; gap: 17px; color: var(--system-bar-foreground); }
-.status-signal { display: flex; height: 13px; align-items: end; gap: 2px; }
-.status-signal i { width: 3px; background: currentColor; }
-.status-signal i:nth-child(1) { height: 4px; }
-.status-signal i:nth-child(2) { height: 7px; }
-.status-signal i:nth-child(3) { height: 10px; }
-.status-signal i:nth-child(4) { height: 13px; }
-.status-battery { position: relative; width: 19px; height: 10px; border: 1px solid currentColor; padding: 2px; }
-.status-battery::after { position: absolute; top: 2px; right: -4px; width: 2px; height: 4px; background: currentColor; content: ""; }
-.status-battery i { display: block; width: 100%; height: 100%; background: #b7cf89; }
+.system-menubar__status { flex: 0 0 auto; gap: 10px; margin-left: auto; color: var(--system-bar-foreground); }
+.system-menubar__divider--status { height: 15px; margin: 0 3px; }
 .system-clock { min-width: 130px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.appearance-toggle { display: flex; height: 26px; align-items: center; gap: 2px; padding: 2px; border: 1px solid color-mix(in srgb, var(--system-bar-foreground) 30%, transparent); background: color-mix(in srgb, var(--system-bar-foreground) 7%, transparent); }
-.appearance-toggle button { display: grid; width: 25px; height: 20px; place-items: center; padding: 0; border: 0; background: transparent; color: color-mix(in srgb, var(--system-bar-foreground) 58%, transparent); cursor: pointer; }
-.appearance-toggle button:hover { color: #fff9df; }
-.appearance-toggle button.is-selected { background: color-mix(in srgb, var(--desktop-accent) 24%, transparent); color: var(--system-bar-foreground); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--desktop-accent) 48%, transparent); }
-.appearance-icon { display: block; font: 15px/1 "Segoe UI Symbol", sans-serif; transform: rotate(0) scale(1); transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.appearance-toggle button.is-selected .appearance-icon--moon { transform: rotate(-18deg) scale(1.08); }
-.appearance-toggle button.is-selected .appearance-icon--sun { transform: rotate(35deg) scale(1.08); }
-.appearance-icon.is-animating { animation: appearance-pop 420ms cubic-bezier(0.2, 0.9, 0.25, 1.2); }
-@keyframes appearance-pop { 0% { transform: scale(0.65) rotate(-35deg); } 55% { transform: scale(1.35) rotate(16deg); } 100% { transform: scale(1.08) rotate(0); } }
-.fullscreen-toggle { display: grid; width: 26px; height: 26px; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--system-bar-foreground) 30%, transparent); background: color-mix(in srgb, var(--system-bar-foreground) 7%, transparent); color: var(--system-bar-foreground); cursor: pointer; }
-.fullscreen-toggle:hover { background: rgba(241, 237, 218, 0.18); }
-.fullscreen-glyph { display: block; width: 14px; height: 14px; background: linear-gradient(currentColor, currentColor) left top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 2px 6px no-repeat; transition: transform 180ms ease; }
+.appearance-toggle { position: relative; display: block; width: 62px; height: 30px; flex: 0 0 62px; padding: 0; overflow: hidden; border: 1px solid color-mix(in srgb, var(--system-bar-foreground) 34%, transparent); border-radius: 999px; background-color: #102341; background-image: radial-gradient(circle at 49% 23%, #e6f1e9 0 1px, transparent 1.5px), radial-gradient(circle at 68% 60%, #e6f1e9 0 1px, transparent 1.5px), radial-gradient(circle at 86% 27%, #e6f1e9 0 1px, transparent 1.5px), linear-gradient(105deg, #102341, #233960); cursor: pointer; transition: background-color 280ms ease, border-color 280ms ease, background-image 280ms ease; }
+.appearance-toggle::before { position: absolute; inset: 0; background: radial-gradient(ellipse at 40% 47%, #d9f2f3 0 14%, transparent 18%), radial-gradient(ellipse at 50% 36%, #eefbfa 0 11%, transparent 15%), radial-gradient(ellipse at 59% 50%, #d9f2f3 0 12%, transparent 16%), radial-gradient(ellipse at 75% 27%, #eefbfa 0 10%, transparent 14%), radial-gradient(ellipse at 83% 40%, #d9f2f3 0 13%, transparent 17%); content: ""; opacity: 0; transition: opacity 260ms ease; pointer-events: none; }
+.appearance-toggle.is-light { background-color: #83ccdf; background-image: linear-gradient(110deg, #75c8dc, #d4eff0); }
+.appearance-toggle.is-light::before { opacity: 1; }
+.appearance-toggle:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: 2px; }
+.appearance-toggle__thumb { position: absolute; z-index: 1; top: 2px; left: 2px; display: block; width: 24px; height: 24px; border-radius: 50%; background: #eeeacb; box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3); transform: translateX(0); transition: transform 380ms cubic-bezier(0.2, 0.85, 0.25, 1.2), background-color 260ms ease; }
+.appearance-toggle.is-light .appearance-toggle__thumb { background: #ffe347; transform: translateX(34px); }
+.appearance-icon { position: absolute; z-index: 2; top: 0; display: grid; width: 28px; height: 28px; place-items: center; color: #f9f1c8; font: 14px/1 "Segoe UI Symbol", sans-serif; transition: opacity 180ms ease, transform 380ms cubic-bezier(0.2, 0.85, 0.25, 1.2); }
+.appearance-icon--moon { left: 0; opacity: 0; }
+.appearance-icon--sun { right: 0; opacity: 0; color: #fff8d1; }
+.appearance-toggle:not(.is-light) .appearance-icon--moon,
+.appearance-toggle.is-light .appearance-icon--sun { opacity: 1; }
+.appearance-toggle.is-animating .appearance-toggle__thumb { animation: toggle-bounce 440ms cubic-bezier(0.2, 0.85, 0.25, 1.2); }
+@keyframes toggle-bounce { 0% { scale: 0.86; } 55% { scale: 1.12; } 100% { scale: 1; } }
+.fullscreen-toggle { display: grid; width: 26px; height: 28px; place-items: center; padding: 0; border: 0; background: transparent; color: var(--system-bar-foreground); cursor: pointer; }
+.fullscreen-toggle:hover { color: var(--desktop-accent); }
+.fullscreen-toggle:focus-visible { outline: 1px solid color-mix(in srgb, var(--system-bar-foreground) 55%, transparent); outline-offset: 1px; }
+.fullscreen-glyph { display: block; width: 15px; height: 15px; background: linear-gradient(currentColor, currentColor) left top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 2px 6px no-repeat; transition: transform 180ms ease; }
 .fullscreen-toggle:hover .fullscreen-glyph { transform: scale(0.84); }
 .fullscreen-exit[hidden] { display: none; }
 .fullscreen-exit { position: fixed; z-index: 100; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: grid; width: 36px; height: 36px; min-height: 0; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--system-bar-foreground) 38%, transparent); border-radius: 5px; background: color-mix(in srgb, var(--system-bar-background) 70%, transparent); color: var(--system-bar-foreground); cursor: pointer; font: 23px/1 "Segoe UI Symbol", sans-serif; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); backdrop-filter: blur(14px); }
-.fullscreen-exit:hover, .fullscreen-exit:focus-visible { background: rgba(16, 34, 39, 0.72); outline: 1px solid rgba(241, 237, 218, 0.65); }
+.fullscreen-exit:hover, .fullscreen-exit:focus-visible { background: color-mix(in srgb, var(--system-bar-background) 78%, var(--system-bar-foreground)); color: var(--system-bar-foreground); outline: 1px solid color-mix(in srgb, var(--system-bar-foreground) 65%, transparent); }
 body.is-fullscreen-view .system-menubar,
 body.is-fullscreen-view .desktop-dock,
 body.is-fullscreen-view .portfolio-window { display: none !important; }
 
-.system-menubar, .desktop-dock, .portfolio-window, .fullscreen-exit { transition: opacity 180ms ease; }
-body.is-theme-transitioning .system-menubar,
+.system-menubar { transition: background-color 1500ms ease, color 1500ms ease, border-color 1500ms ease; }
+.desktop-dock, .portfolio-window, .fullscreen-exit { transition: opacity 180ms ease, visibility 0s linear; }
 body.is-theme-transitioning .desktop-dock,
 body.is-theme-transitioning .portfolio-window,
-body.is-theme-transitioning .fullscreen-exit { opacity: 0; visibility: hidden; pointer-events: none; }
+body.is-theme-transitioning .fullscreen-exit { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 180ms ease, visibility 0s linear 180ms; }
 
 
 .portfolio-window {
@@ -376,11 +374,13 @@ body.is-mobile-mode .resize-handle { display: none; }
   .system-brand { gap: 6px; }
   .system-brand__mark { width: 17px; height: 17px; }
   .system-menubar__left { gap: 7px; }
-  .system-menubar__status { gap: 5px; }
+  .system-menubar__status { gap: 7px; margin-left: auto; }
   .system-clock { min-width: 0; font-size: 9px; }
-  .appearance-toggle { height: 23px; }
-  .appearance-toggle button { width: 21px; height: 19px; }
-  .fullscreen-toggle { width: 22px; height: 23px; }
+  .appearance-toggle { width: 54px; height: 25px; flex-basis: 54px; }
+  .appearance-toggle__thumb { top: 2px; width: 19px; height: 19px; }
+  .appearance-toggle.is-light .appearance-toggle__thumb { transform: translateX(29px); }
+  .appearance-icon { width: 23px; height: 23px; font-size: 12px; }
+  .fullscreen-toggle { width: 22px; height: 25px; }
   .projects-window { width: 100%; height: auto; border-radius: 0; }
   .project-reel { min-height: 100%; gap: 8px; padding: 12px 10px 10px; }
   .project-slide { padding: 12px; }
@@ -413,8 +413,8 @@ body.is-mobile-mode .window-titlebar { padding-right: 0; }
   .system-menubar__left { gap: 5px; }
   .system-brand { gap: 4px; }
   .system-brand strong { font-size: 10px; }
-  .system-menubar__status { gap: 4px; }
-  .system-clock { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
+  .system-menubar__status { gap: 5px; margin-left: auto; }
+  .system-clock { min-width: 0; max-width: none; overflow: visible; text-overflow: clip; white-space: nowrap; font-size: 9px; }
   .portfolio-window { width: calc(100vw - 24px); min-width: 0; }
   .window-content { padding: 28px 24px; }
   .window-content p:not(.eyebrow) { font-size: 14px; }
