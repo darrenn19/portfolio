@@ -24,6 +24,14 @@
 
   ctx.imageSmoothingEnabled = false;
 
+  // The dark theme's scene lives in pixel-night-dark.js. It is drawn into
+  // this buffer only while cross-fading with the day scene below.
+  const nightScene = window.PixelNightDark;
+  const nightBuffer = document.createElement("canvas");
+  nightBuffer.width = W;
+  nightBuffer.height = H;
+  const nightCtx = nightBuffer.getContext("2d", { alpha: false });
+
   function updateVisibleLogicalWidth() {
     const canvasBounds = canvas.getBoundingClientRect();
     visibleLogicalWidth = canvasBounds.width > 0
@@ -949,8 +957,7 @@
         {
           align: "center",
           gap: nameScale,
-          shadow: dayProgress > 0.7 ? 1 : 3,
-          glow: dayProgress < 0.12
+          shadow: dayProgress > 0.7 ? 1 : 3
         }
       );
     });
@@ -963,6 +970,30 @@
     );
     rect(318, nameY + nameBlockHeight() + 6, 4, 1, pulse);
   }
+
+  // ---------------------------------------------------------------
+  // Name constellation: clicking a star of the first letter rewrites it
+  // ---------------------------------------------------------------
+
+  function isOverNameStar(event) {
+    // The wallpaper itself ignores the pointer, so a hit on bare desktop
+    // lands on the page root; anything else is real UI on top.
+    if (dayProgress > 0 || !animationsEnabled) return false;
+    if (event.target !== document.body && event.target !== document.documentElement) return false;
+    const bounds = canvas.getBoundingClientRect();
+    return nightScene.isNameHotspot(
+      (event.clientX - bounds.left) * W / bounds.width,
+      (event.clientY - bounds.top) * H / bounds.height
+    );
+  }
+
+  document.addEventListener("click", event => {
+    if (isOverNameStar(event)) nightScene.replayName();
+  });
+
+  document.addEventListener("pointermove", event => {
+    document.body.style.cursor = isOverNameStar(event) ? "pointer" : "";
+  }, { passive: true });
 
   // ---------------------------------------------------------------
   // Render
@@ -1001,21 +1032,37 @@
     updateDayProgress(now);
 
     // Keep canvas coordinate system stable at 640x360.
-    drawSky(now);
-    drawStars(now);
-    drawClouds(now);
-    drawMoon(now);
-    drawSun(now);
-    drawMountains();
-    drawLake(now);
-    drawField(now);
-    drawFlowers(now);
-    if (dayProgress > 0) {
+    if (dayProgress <= 0) {
+      // Fully dark: the detailed night scene owns the whole canvas.
+      nightScene.draw(ctx, now, 0, visibleLogicalWidth, animationsEnabled);
+    } else {
+      drawSky(now);
+      drawStars(now);
+      drawClouds(now);
+      drawMoon(now);
+      drawSun(now);
+      drawMountains();
+      drawLake(now);
+      drawField(now);
+      drawFlowers(now);
+
+      // Mid-transition, the night scene fades out over the day scene.
+      if (dayProgress < 1) {
+        nightScene.draw(nightCtx, now, dayProgress, visibleLogicalWidth, animationsEnabled);
+        ctx.globalAlpha = 1 - dayProgress;
+        ctx.drawImage(nightBuffer, 0, 0);
+        ctx.globalAlpha = 1;
+      }
+
       ctx.globalAlpha = dayProgress * 0.14;
       rect(0, 0, W, H, DAY.wash);
       ctx.globalAlpha = 1;
+
+      // The pixel-font name belongs to the day scene; at night it is a constellation.
+      ctx.globalAlpha = dayProgress;
+      drawText(now);
+      ctx.globalAlpha = 1;
     }
-    drawText(now);
 
     if (animationsEnabled) raf = requestAnimationFrame(render);
   }

@@ -19,12 +19,6 @@
       <button id="desktop-settings-toggle" class="system-brand" type="button" aria-label="Open desktop settings" aria-controls="desktop-settings-popover" aria-expanded="false" title="Desktop settings">
         <span class="system-brand__mark" aria-hidden="true">D</span>
       </button>
-      <span class="system-menubar__divider system-menubar__divider--appearance" aria-hidden="true"></span>
-      <button id="appearance-toggle" class="appearance-toggle" type="button" role="switch" aria-label="Light appearance" aria-checked="false" title="Toggle light appearance">
-        <span class="appearance-icon appearance-icon--moon" aria-hidden="true">☾</span>
-        <span class="appearance-icon appearance-icon--sun" aria-hidden="true">☀</span>
-        <span class="appearance-toggle__thumb" aria-hidden="true"></span>
-      </button>
     </div>
     <div class="system-menubar__status" aria-label="System status">
       <time id="system-clock" class="system-clock"></time>
@@ -48,6 +42,10 @@
         <button class="accent-swatch" type="button" role="radio" data-accent="#cf7f98" aria-label="Rose" aria-checked="false" title="Rose" style="--swatch-color: #cf7f98"></button>
         <button class="accent-swatch" type="button" role="radio" data-accent="#8c88bb" aria-label="Lilac" aria-checked="false" title="Lilac" style="--swatch-color: #8c88bb"></button>
       </div>
+    </div>
+    <div class="setting-row appearance-setting-row">
+      <span><strong>Appearance</strong><small>Switch between night and day.</small></span>
+      <button id="appearance-toggle" class="appearance-button" type="button">Light mode</button>
     </div>
     <label class="setting-row" for="disable-animations">
       <span><strong>Disable animations</strong><small>Pause motion across the desktop.</small></span>
@@ -160,6 +158,7 @@
   </nav>
 
   <script src="desktop.js"></script>
+  <script src="pixel-night-dark.js"></script>
   <script src="pixel-night.js"></script>
 </body>
 </html>

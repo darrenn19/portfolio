@@ -131,9 +131,7 @@
     const previousAppearance = document.documentElement.dataset.appearance || "dark";
     const motionDisabled = animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isLight = appearance === "light";
-    appearanceToggle.classList.toggle("is-light", isLight);
-    appearanceToggle.setAttribute("aria-checked", String(isLight));
-    appearanceToggle.setAttribute("aria-label", `${isLight ? "Light" : "Dark"} appearance`);
+    appearanceToggle.textContent = isLight ? "Dark mode" : "Light mode";
 
     if (!animate || appearance === previousAppearance) {
       writeSetting(appearanceKey, appearance);
@@ -143,7 +141,6 @@
 
     window.clearTimeout(appearanceTimer);
     if (motionDisabled) {
-      appearanceToggle.classList.remove("is-animating");
       root.classList.remove("is-theme-transitioning");
       document.documentElement.dataset.appearance = appearance;
       writeSetting(appearanceKey, appearance);
@@ -152,9 +149,6 @@
       }));
       return;
     } else {
-      appearanceToggle.classList.remove("is-animating");
-      void appearanceToggle.offsetWidth;
-      appearanceToggle.classList.add("is-animating");
       root.classList.add("is-theme-transitioning");
     }
     document.documentElement.dataset.appearance = appearance;
@@ -171,7 +165,7 @@
 
   setAppearance(readSetting(appearanceKey) || "dark", false);
   appearanceToggle.addEventListener("click", () => {
-    setAppearance(appearanceToggle.classList.contains("is-light") ? "dark" : "light");
+    setAppearance(document.documentElement.dataset.appearance === "light" ? "dark" : "light");
   });
 
   const fullscreenToggle = document.getElementById("fullscreen-toggle");
