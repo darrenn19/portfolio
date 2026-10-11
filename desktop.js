@@ -22,7 +22,7 @@
 
   function writeSetting(key, value) {
     try { localStorage.setItem(key, value); } catch { /* Session-only fallback. */ }
-  }
+  } 
 
   function setAccent(value) {
     const selected = accentButtons.find(button => button.dataset.accent === value) || accentButtons[0];
@@ -333,98 +333,201 @@
     syncDock();
   }
 
-  function setGenieOrigin(windowElement) {
-    const button = dock.querySelector(`[data-target="${windowElement.dataset.window}"]`);
-    const icon = button.querySelector(".dock-icon");
-    const windowBounds = windowElement.getBoundingClientRect();
-    const iconBounds = icon.getBoundingClientRect();
-    const iconX = iconBounds.left + iconBounds.width / 2 - windowBounds.left;
-    const iconY = iconBounds.top + iconBounds.height / 2 - windowBounds.top;
-    windowElement.style.setProperty("--genie-origin-x", `${iconX}px`);
-    windowElement.style.setProperty("--genie-origin-y", `${iconY}px`);
-    windowElement.style.setProperty(
-      "--window-rest-transform",
-      root.classList.contains("is-mobile-mode") || windowElement.classList.contains("is-expanded")
-        ? "translate3d(0, 0, 0)"
-        : windowElement.classList.contains("is-dragged")
-        ? "translate3d(0, 0, 0)"
-        : "translate(-50%, -50%)"
-    );
+  // ---------------------------------------------------------------
+  // Genie effect
+  //
+  // macOS does not scale a window out of the dock; it pours it, like a
+  // flexible sheet, in two overlapping movements:
+  //
+  //   1. Rise. The bottom edge stays pinched inside the dock icon while
+  //      the top edge climbs to its resting place, so the sheet is drawn
+  //      out long and thin between two S-curves that meet at the icon.
+  //   2. Release. The bottom edge lets go of the icon and lifts to its
+  //      resting place, widening as it goes, and the curves relax into
+  //      the window's straight sides.
+  //
+  // HTML cannot be bent, so for the length of the animation the window
+  // is replaced by a stack of thin horizontal slices of itself. Each
+  // slice is projected onto the piece of funnel it currently occupies,
+  // which makes the stack follow the curves smoothly.
+  // ---------------------------------------------------------------
 
-    return {
-      x: iconX,
-      y: iconY,
-      xPercent: iconX / windowBounds.width * 100,
-      yPercent: iconY / windowBounds.height * 100
-    };
+  const genieSlices = 14;
+  const genieDuration = 240;
+
+  function adjugate(m) {
+    return [
+      m[4] * m[8] - m[5] * m[7], m[2] * m[7] - m[1] * m[8], m[1] * m[5] - m[2] * m[4],
+      m[5] * m[6] - m[3] * m[8], m[0] * m[8] - m[2] * m[6], m[2] * m[3] - m[0] * m[5],
+      m[3] * m[7] - m[4] * m[6], m[1] * m[6] - m[0] * m[7], m[0] * m[4] - m[1] * m[3]
+    ];
   }
 
-  function makePolygon(points) {
-    return `polygon(${points.map(([x, y]) => `${x}% ${y}%`).join(", ")})`;
+  function multiply(a, b) {
+    const out = new Array(9);
+    for (let row = 0; row < 3; row++) {
+      for (let column = 0; column < 3; column++) {
+        out[row * 3 + column] =
+          a[row * 3] * b[column] + a[row * 3 + 1] * b[3 + column] + a[row * 3 + 2] * b[6 + column];
+      }
+    }
+    return out;
   }
 
-  function playGenieOpen(windowElement, origin) {
+  function basisToPoints(p) {
+    const m = [p[0], p[2], p[4], p[1], p[3], p[5], 1, 1, 1];
+    const a = adjugate(m);
+    const v = [
+      a[0] * p[6] + a[1] * p[7] + a[2],
+      a[3] * p[6] + a[4] * p[7] + a[5],
+      a[6] * p[6] + a[7] * p[7] + a[8]
+    ];
+    return multiply(m, [v[0], 0, 0, 0, v[1], 0, 0, 0, v[2]]);
+  }
+
+  // CSS matrix3d that carries one quad (four x,y corners) onto another.
+  function quadToQuad(from, to) {
+    const t = multiply(basisToPoints(to), adjugate(basisToPoints(from))).map((value, _, all) => value / all[8]);
+    return `matrix3d(${t[0]}, ${t[3]}, 0, ${t[6]}, ${t[1]}, ${t[4]}, 0, ${t[7]}, 0, 0, 1, 0, ${t[2]}, ${t[5]}, 0, 1)`;
+  }
+
+  function easeOut(value) {
+    const t = Math.max(0, Math.min(1, value));
+    return 1 - (1 - t) ** 3;
+  }
+
+  function easeInOut(value) {
+    const t = Math.max(0, Math.min(1, value));
+    return t * t * (3 - 2 * t);
+  }
+
+  function playGenieOpen(windowElement) {
+    openingAnimations.get(windowElement)?.cancel();
     if (animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       windowElement.classList.remove("is-opening");
       return;
     }
 
-    openingAnimations.get(windowElement)?.cancel();
-    windowElement.classList.add("is-opening");
-    const x = origin.xPercent;
-    const y = origin.yPercent;
-    const clamp = value => Math.max(0, Math.min(100, value));
-    const collapsed = makePolygon(Array.from({ length: 8 }, () => [x, y]));
-    const funnel = makePolygon([
-      [0, 0], [100, 0], [100, 52], [clamp(x + 34), 76],
-      [clamp(x + 7), 100], [clamp(x - 7), 100], [clamp(x - 34), 76], [0, 52]
-    ]);
-    const widening = makePolygon([
-      [0, 0], [100, 0], [100, 76], [clamp(x + 72), 90],
-      [clamp(x + 36), 100], [clamp(x - 36), 100], [clamp(x - 72), 90], [0, 76]
-    ]);
-    const full = makePolygon([
-      [0, 0], [50, 0], [100, 0], [100, 50],
-      [100, 100], [50, 100], [0, 100], [0, 50]
-    ]);
-    const restTransform = windowElement.style.getPropertyValue("--window-rest-transform");
-    const animation = windowElement.animate([
-      {
-        opacity: 0.8,
-        clipPath: collapsed,
-        transformOrigin: `${origin.x}px ${origin.y}px`,
-        transform: `${restTransform} scale(0.015, 0.02)`
-      },
-      {
-        offset: 0.32,
-        opacity: 1,
-        clipPath: funnel,
-        transform: `${restTransform} scale(0.12, 0.82)`
-      },
-      {
-        offset: 0.76,
-        clipPath: widening,
-        transform: `${restTransform} scale(1.025, 1.015)`
-      },
-      {
-        opacity: 1,
-        clipPath: full,
-        transform: `${restTransform} scale(1, 1)`
-      }
-    ], {
-      duration: 420,
-      easing: "cubic-bezier(0.18, 0.86, 0.24, 1)",
-      fill: "both"
-    });
+    const icon = dock.querySelector(`[data-target="${windowElement.dataset.window}"] .dock-icon`);
+    const bounds = windowElement.getBoundingClientRect();
+    const iconBounds = icon.getBoundingClientRect();
+    const width = bounds.width;
+    const height = bounds.height;
+    // Everything below is in the window's own coordinates.
+    const spoutY = Math.max(height + 1, iconBounds.top + iconBounds.height / 2 - bounds.top);
+    const spoutLeft = iconBounds.left - bounds.left;
+    const spoutRight = iconBounds.right - bounds.left;
 
-    openingAnimations.set(windowElement, animation);
-    animation.addEventListener("finish", () => {
-      if (openingAnimations.get(windowElement) === animation) {
-        openingAnimations.delete(windowElement);
+    // A lightweight copy of the window to slice up. Whatever is scrolled out
+    // of sight below or to the right (later project reels, later gallery
+    // slides) is left out, since every slice would otherwise carry it too.
+    const unseen = [];
+    for (const node of windowElement.querySelectorAll("*")) {
+      if (unseen.some(parent => parent.contains(node))) continue;
+      const box = node.getBoundingClientRect();
+      if (box.top >= bounds.bottom || box.left >= bounds.right) unseen.push(node);
+    }
+    unseen.forEach(node => node.setAttribute("data-genie-unseen", ""));
+    // Copies do not inherit scroll positions, so note any that are in use.
+    const scrolled = [...windowElement.querySelectorAll("*")].filter(node => node.scrollTop || node.scrollLeft);
+    scrolled.forEach(node => node.setAttribute("data-genie-scroll", `${node.scrollLeft},${node.scrollTop}`));
+    const template = windowElement.cloneNode(true);
+    unseen.forEach(node => node.removeAttribute("data-genie-unseen"));
+    scrolled.forEach(node => node.removeAttribute("data-genie-scroll"));
+    template.querySelectorAll("[data-genie-unseen]").forEach(node => node.remove());
+    template.querySelectorAll("[id]").forEach(node => node.removeAttribute("id"));
+    template.removeAttribute("data-window");
+
+    // The stand-in: slices of that copy, stacked where the window sits.
+    const stage = document.createElement("div");
+    stage.className = "genie-stage";
+    stage.setAttribute("aria-hidden", "true");
+    stage.style.cssText = `position: fixed; z-index: ${windowElement.style.zIndex || 10}; left: ${bounds.left}px; top: ${bounds.top}px; width: 0; height: 0; pointer-events: none;`;
+    const slices = Array.from({ length: genieSlices }, (_, index) => {
+      const top = height * index / genieSlices;
+      const bottom = height * (index + 1) / genieSlices;
+      const copy = template.cloneNode(true);
+      copy.style.cssText = `position: absolute; inset: ${-top}px auto auto 0; width: ${width}px; height: ${height}px; min-width: 0; min-height: 0; max-width: none; margin: 0; box-shadow: none; transform: none;`;
+      // Each slice is a window-wide box one strip tall, showing its strip of
+      // the copy. It runs two pixels under the next slice to hide the seam.
+      const slice = document.createElement("div");
+      slice.style.cssText = `position: absolute; inset: 0 auto auto 0; width: ${width}px; height: ${bottom - top + 2}px; overflow: hidden; transform-origin: 0 0; will-change: transform;`;
+      slice.appendChild(copy);
+      stage.appendChild(slice);
+      return { element: slice, top, bottom };
+    });
+    windowElement.parentNode.appendChild(stage);
+    stage.querySelectorAll("[data-genie-scroll]").forEach(node => {
+      const [left, top] = node.dataset.genieScroll.split(",").map(Number);
+      node.scrollLeft = left;
+      node.scrollTop = top;
+    });
+    windowElement.classList.add("is-opening");
+    // The real window stays invisible until the sheet has landed. Its usual
+    // opacity transition is switched off so it cannot flash or fade around that.
+    windowElement.style.transition = "none";
+    windowElement.style.opacity = "0";
+
+    let frame = 0;
+    const startTime = performance.now();
+    const animation = {
+      cancel() {
+        cancelAnimationFrame(frame);
+        stage.remove();
+        windowElement.style.opacity = "";
         windowElement.classList.remove("is-opening");
-        animation.cancel();
+        // Let the browser register the window as visible before its opacity
+        // transition is restored, or it would fade in instead of appearing.
+        void getComputedStyle(windowElement).opacity;
+        windowElement.style.transition = "";
+        if (openingAnimations.get(windowElement) === animation) openingAnimations.delete(windowElement);
       }
-    }, { once: true });
+    };
+    openingAnimations.set(windowElement, animation);
+
+    function step(now) {
+      const progress = (now - startTime) / genieDuration;
+      if (progress >= 1) {
+        animation.cancel();
+        return;
+      }
+
+      const rise = easeOut(progress / 0.6);
+      const release = easeInOut((progress - 0.25) / 0.75);
+
+      // Where the sheet's top and bottom edges are right now.
+      const sheetTop = spoutY * (1 - rise);
+      const sheetBottom = spoutY + (height - spoutY) * release;
+      const bottomLeft = spoutLeft * (1 - release);
+      const bottomRight = width + (spoutRight - width) * (1 - release);
+
+      // Its sides: S-curves from the window's top corners to the bottom edge.
+      const edges = y => {
+        const pinch = 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, y / sheetBottom)));
+        return [bottomLeft * pinch, width + (bottomRight - width) * pinch];
+      };
+
+      const stretch = (sheetBottom - sheetTop) / height;
+      for (const slice of slices) {
+        // Nothing has come out of the icon yet.
+        if (stretch * height < 0.5) {
+          slice.element.style.visibility = "hidden";
+          continue;
+        }
+        const top = sheetTop + slice.top * stretch;
+        const bottom = sheetTop + slice.bottom * stretch;
+        const [topLeft, topRight] = edges(top);
+        const [lowerLeft, lowerRight] = edges(bottom);
+        const depth = slice.bottom - slice.top;
+        slice.element.style.visibility = "";
+        slice.element.style.transform = quadToQuad(
+          [0, 0, width, 0, width, depth, 0, depth],
+          [topLeft, top, topRight, top, lowerRight, bottom, lowerLeft, bottom]
+        );
+      }
+      frame = requestAnimationFrame(step);
+    }
+    step(startTime);
   }
 
   function addResizeHandles(windowElement) {
@@ -563,6 +666,27 @@
     button.setAttribute("aria-pressed", "true");
   }
 
+  function keepAboveDock(windowElement) {
+    // A freshly opened window must sit wholly above the dock (and below the
+    // menu bar). If its usual spot would overlap, it is pinned higher up,
+    // and shortened only when the screen is too small to hold it otherwise.
+    if (root.classList.contains("is-mobile-mode") || windowElement.classList.contains("is-expanded")) return;
+    const limit = dock.getBoundingClientRect().top - 12;
+    const ceiling = document.querySelector(".system-menubar").getBoundingClientRect().bottom + 8;
+    const bounds = windowElement.getBoundingClientRect();
+    if (bounds.bottom <= limit) return;
+
+    const top = Math.max(ceiling, bounds.top - (bounds.bottom - limit));
+    windowElement.style.left = `${bounds.left}px`;
+    windowElement.style.top = `${top}px`;
+    windowElement.style.transform = "translate3d(0, 0, 0)";
+    windowElement.classList.add("is-dragged");
+    if (top + bounds.height > limit) {
+      windowElement.style.height = `${limit - top}px`;
+      windowElement.dataset.fittedHeight = "true";
+    }
+  }
+
   function openWindow(id) {
     const windowElement = windows.find(item => item.dataset.window === id);
     if (!windowElement) return;
@@ -580,10 +704,11 @@
       windowElement.hidden = false;
       windowElement.style.setProperty("--window-offset", `${(openCount % 5) * 22}px`);
       openCount++;
-      windowElement.style.visibility = "hidden";
-      const origin = setGenieOrigin(windowElement);
-      windowElement.style.visibility = "";
-      playGenieOpen(windowElement, origin);
+      keepAboveDock(windowElement);
+      // Bring it to the front first, so the sheet pours over any open windows.
+      focusWindow(windowElement);
+      playGenieOpen(windowElement);
+      return;
     }
     focusWindow(windowElement);
   }
@@ -597,6 +722,10 @@
     windowElement.style.top = "";
     windowElement.style.transform = "";
     windowElement.style.willChange = "";
+    if (windowElement.dataset.fittedHeight) {
+      windowElement.style.height = "";
+      delete windowElement.dataset.fittedHeight;
+    }
     const expandButton = windowElement.querySelector('[data-action="expand"]');
     expandButton.setAttribute("aria-label", `Expand ${getWindowTitle(windowElement)} window`);
     expandButton.setAttribute("aria-pressed", "false");
