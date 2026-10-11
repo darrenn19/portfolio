@@ -28,9 +28,9 @@
   --system-bar-background: rgba(9, 25, 31, 0.76);
   --system-bar-foreground: #f1edda;
   --system-bar-border: rgba(231, 235, 211, 0.22);
-  --desktop-dock-background: rgba(16, 34, 39, 0.48);
-  --desktop-dock-mobile-background: rgba(16, 34, 39, 0.62);
-  --desktop-dock-border: rgba(233, 238, 219, 0.46);
+  --desktop-dock-background: rgba(26, 34, 68, 0.34);
+  --desktop-dock-mobile-background: rgba(18, 24, 50, 0.6);
+  --desktop-dock-border: rgba(226, 232, 255, 0.24);
   --day-progress: 0%;
   --system-bar-background-dark: rgba(9, 25, 31, 0.76);
   --system-bar-background-light: rgba(223, 238, 235, 0.82);
@@ -44,9 +44,9 @@
 }
 
 :root[data-appearance="light"] {
-  --desktop-dock-background: rgba(224, 240, 231, 0.72);
-  --desktop-dock-mobile-background: rgba(224, 240, 231, 0.86);
-  --desktop-dock-border: rgba(38, 62, 72, 0.35);
+  --desktop-dock-background: rgba(240, 247, 244, 0.38);
+  --desktop-dock-mobile-background: rgba(236, 245, 241, 0.78);
+  --desktop-dock-border: rgba(255, 255, 255, 0.62);
 }
 
 *,
@@ -54,6 +54,13 @@
 *::after {
   box-sizing: border-box;
 }
+
+/*
+  Pixel cursors. desktop.js draws them and stores them in --cursor-arrow
+  --cursor-hand, --cursor-grab and --cursor-grabbing; until then (or without JS) the system cursors apply.
+*/
+html { cursor: var(--cursor-arrow, auto); }
+a, button, label, summary, [role="button"], [role="radio"] { cursor: var(--cursor-hand, pointer); }
 
 html,
 body {
@@ -131,7 +138,6 @@ body {
       transparent 1px,
       transparent 4px
     );
-  mix-blend-mode: screen;
 }
 
 .pixel-night::after {
@@ -166,7 +172,7 @@ body.has-open-window .pixel-night::after { opacity: 1; }
 }
 .system-menubar__left, .system-menubar__status { display: flex; height: 100%; align-items: center; }
 .system-menubar__left { gap: 18px; min-width: 0; }
-.system-brand { display: flex; height: 100%; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; font: inherit; }
+.system-brand { display: flex; height: 100%; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: inherit; cursor: var(--cursor-hand, pointer); font: inherit; }
 .system-brand strong { font-size: 11px; }
 .system-brand__mark { display: grid; width: 19px; height: 19px; place-items: center; border: 1px solid rgba(241, 237, 218, 0.62); background: var(--desktop-accent); color: #172c2c; font-size: 12px; font-weight: 700; }
 .system-menubar__divider { width: 1px; height: 17px; flex: 0 0 1px; background: color-mix(in srgb, var(--system-bar-foreground) 32%, transparent); }
@@ -174,30 +180,30 @@ body.has-open-window .pixel-night::after { opacity: 1; }
 .system-menubar__status { flex: 0 0 auto; gap: 10px; margin-left: auto; color: var(--system-bar-foreground); }
 .system-menubar__divider--status { height: 15px; margin: 0 3px; }
 .system-clock { min-width: 130px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.fullscreen-toggle { display: grid; width: 26px; height: 24px; place-items: center; padding: 0; border: 0; background: transparent; color: var(--system-bar-foreground); cursor: pointer; }
+.fullscreen-toggle { display: grid; width: 26px; height: 24px; place-items: center; padding: 0; border: 0; background: transparent; color: var(--system-bar-foreground); cursor: var(--cursor-hand, pointer); }
 .fullscreen-toggle:hover { color: var(--desktop-accent); }
 .fullscreen-toggle:focus-visible { outline: 1px solid color-mix(in srgb, var(--system-bar-foreground) 55%, transparent); outline-offset: 1px; }
 .fullscreen-glyph { display: block; width: 15px; height: 15px; background: linear-gradient(currentColor, currentColor) left top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 2px 6px no-repeat; transition: transform 180ms ease; }
 .fullscreen-toggle:hover .fullscreen-glyph { transform: scale(0.84); }
 .fullscreen-exit[hidden] { display: none; }
-.fullscreen-exit { position: fixed; z-index: 100; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: grid; width: 36px; height: 36px; min-height: 0; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--system-bar-foreground) 38%, transparent); border-radius: 5px; background: color-mix(in srgb, var(--system-bar-background) 70%, transparent); color: var(--system-bar-foreground); cursor: pointer; font: 23px/1 "Segoe UI Symbol", sans-serif; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); backdrop-filter: blur(14px); }
+.fullscreen-exit { position: fixed; z-index: 100; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: grid; width: 36px; height: 36px; min-height: 0; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--system-bar-foreground) 38%, transparent); border-radius: 5px; background: color-mix(in srgb, var(--system-bar-background) 70%, transparent); color: var(--system-bar-foreground); cursor: var(--cursor-hand, pointer); font: 23px/1 "Segoe UI Symbol", sans-serif; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); backdrop-filter: blur(14px); }
 .fullscreen-exit:hover, .fullscreen-exit:focus-visible { background: color-mix(in srgb, var(--system-bar-background) 78%, var(--system-bar-foreground)); color: var(--system-bar-foreground); outline: 1px solid color-mix(in srgb, var(--system-bar-foreground) 65%, transparent); }
 .desktop-settings-popover[hidden] { display: none; }
 .desktop-settings-popover { position: fixed; z-index: 60; display: grid; width: min(270px, calc(100vw - 16px)); padding: 10px 12px 12px; border: 2px solid var(--desktop-ink); background: var(--desktop-paper); color: var(--desktop-ink); box-shadow: 4px 5px 0 rgba(5, 18, 23, 0.4); transform: translateY(-3px); }
 .desktop-settings-popover.is-open { transform: translateY(0); }
 .desktop-settings-popover__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(23, 44, 44, 0.24); }
 .desktop-settings-popover__header h2 { margin: 0; font: 700 12px "Courier New", Courier, monospace; }
-.desktop-settings-popover__close { display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 1px solid var(--desktop-ink); background: transparent; color: inherit; cursor: pointer; font: 17px/1 "Segoe UI Symbol", sans-serif; }
+.desktop-settings-popover__close { display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 1px solid var(--desktop-ink); background: transparent; color: inherit; cursor: var(--cursor-hand, pointer); font: 17px/1 "Segoe UI Symbol", sans-serif; }
 .desktop-settings-popover .setting-row { min-height: 58px; }
 .desktop-settings-popover .setting-row:last-child { border-bottom: 1px solid rgba(23, 44, 44, 0.2); }
-.desktop-settings-popover input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--desktop-accent); cursor: pointer; }
-.desktop-settings-popover .appearance-setting-row { cursor: default; }
-.appearance-button { flex: 0 0 auto; padding: 6px 10px; border: 2px solid var(--desktop-ink); border-radius: 3px; background: var(--desktop-accent); color: var(--desktop-ink); box-shadow: 2px 2px 0 rgba(23, 44, 44, 0.25); cursor: pointer; font: 700 11px "Courier New", Courier, monospace; white-space: nowrap; }
+.desktop-settings-popover input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--desktop-accent); cursor: var(--cursor-hand, pointer); }
+.desktop-settings-popover .appearance-setting-row { cursor: var(--cursor-arrow, default); }
+.appearance-button { flex: 0 0 auto; padding: 6px 10px; border: 2px solid var(--desktop-ink); border-radius: 3px; background: var(--desktop-accent); color: var(--desktop-ink); box-shadow: 2px 2px 0 rgba(23, 44, 44, 0.25); cursor: var(--cursor-hand, pointer); font: 700 11px "Courier New", Courier, monospace; white-space: nowrap; }
 .appearance-button:hover { filter: brightness(1.06); }
 .appearance-button:focus-visible { outline: 2px solid var(--desktop-ink); outline-offset: 2px; }
 .desktop-settings-popover .accent-setting-row { display: grid; gap: 10px; padding: 10px 0 12px; }
 .accent-swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
-.accent-swatch { position: relative; display: grid; width: 100%; aspect-ratio: 1; place-items: center; padding: 0; border: 2px solid var(--desktop-ink); border-radius: 3px; background: var(--swatch-color); box-shadow: 2px 2px 0 rgba(23, 44, 44, 0.25); cursor: pointer; transition: transform 140ms ease, box-shadow 140ms ease; }
+.accent-swatch { position: relative; display: grid; width: 100%; aspect-ratio: 1; place-items: center; padding: 0; border: 2px solid var(--desktop-ink); border-radius: 3px; background: var(--swatch-color); box-shadow: 2px 2px 0 rgba(23, 44, 44, 0.25); cursor: var(--cursor-hand, pointer); transition: transform 140ms ease, box-shadow 140ms ease; }
 .accent-swatch:hover { transform: translateY(-2px); }
 .accent-swatch:focus-visible { outline: 2px solid var(--desktop-ink); outline-offset: 2px; }
 .accent-swatch.is-selected { box-shadow: 2px 2px 0 rgba(23, 44, 44, 0.25), inset 0 0 0 2px rgba(255, 255, 255, 0.72); }
@@ -274,12 +280,14 @@ body.animations-disabled *::after {
   border-bottom: 2px solid #152f32;
   background-color: #e9e5d1;
   background-image: repeating-linear-gradient(0deg, transparent 0 2px, rgba(23, 44, 44, 0.18) 2px 3px);
-  cursor: grab;
+  cursor: var(--cursor-grab, grab);
   touch-action: none;
 }
-.window-titlebar:active { cursor: grabbing; }
+.window-titlebar:active { cursor: var(--cursor-grabbing, grabbing); }
+/* Hold the closed fist for the whole drag, whatever the pointer passes over. */
+body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, grabbing) !important; }
 .window-titlebar__title { justify-self: center; padding: 0 10px; background: #e9e5d1; font-size: 12px; font-weight: 700; }
-.window-control { position: relative; width: 18px; height: 18px; padding: 0; border: 2px solid #172c2c; border-radius: 0; cursor: pointer; }
+.window-control { position: relative; width: 18px; height: 18px; padding: 0; border: 2px solid #172c2c; border-radius: 0; cursor: var(--cursor-hand, pointer); }
 .window-control--close { position: absolute; z-index: 2; top: 8px; right: 8px; background: #d95b50; }
 .window-control--expand { background: #e9c45c; }
 .window-control--expand { grid-column: 1; }
@@ -331,63 +339,63 @@ body.animations-disabled *::after {
 .project-notes-copy .eyebrow { margin: 0 0 14px; }
 .project-notes-copy h2 { margin: 0 0 16px; font: 500 30px/1.1 Georgia, "Times New Roman", serif; }
 .project-notes-copy p:last-child { max-width: 38ch; margin: 0; color: #52635b; font-size: 14px; line-height: 1.7; }
-.gallery-arrow { position: absolute; z-index: 2; top: 50%; display: grid; width: 34px; height: 42px; place-items: center; padding: 0; border: 1px solid rgba(241, 237, 218, 0.7); background: rgba(16, 34, 39, 0.65); color: #f1edda; cursor: pointer; font: 24px/1 Georgia, "Times New Roman", serif; transform: translateY(-50%); }
+.gallery-arrow { position: absolute; z-index: 2; top: 50%; display: grid; width: 34px; height: 42px; place-items: center; padding: 0; border: 1px solid rgba(241, 237, 218, 0.7); background: rgba(16, 34, 39, 0.65); color: #f1edda; cursor: var(--cursor-hand, pointer); font: 24px/1 Georgia, "Times New Roman", serif; transform: translateY(-50%); }
 .gallery-arrow:hover, .gallery-arrow:focus-visible { background: #172c2c; outline: 1px solid var(--desktop-accent); }
 .gallery-arrow--previous { left: 8px; }
 .gallery-arrow--next { right: 8px; }
 .settings-content { padding-top: 38px; }
-.setting-row { display: flex; min-height: 76px; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid rgba(23, 44, 44, 0.2); cursor: pointer; }
+.setting-row { display: flex; min-height: 76px; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid rgba(23, 44, 44, 0.2); cursor: var(--cursor-hand, pointer); }
 .setting-row span { display: grid; gap: 6px; }
 .setting-row strong { font-size: 13px; }
 .setting-row small { color: #627269; font-size: 11px; line-height: 1.5; }
 
+/*
+  Dock: a frosted glass shelf of app icons that swell under the pointer,
+  the way the macOS dock magnifies. desktop.js drives it with transforms
+  only (plus --dock-grow for the shelf), so hovering never reflows the page.
+*/
 .desktop-dock {
+  --dock-size: 50px;
   position: fixed;
   z-index: 30;
-  bottom: max(22px, env(safe-area-inset-bottom));
+  bottom: max(12px, env(safe-area-inset-bottom));
   left: 50%;
   display: flex;
   align-items: flex-end;
-  gap: 4px;
-  padding: 8px 10px 6px;
-  border: 2px solid #172c2c;
-  background: rgba(241, 237, 218, 0.94);
-  box-shadow: 4px 5px 0 rgba(5, 18, 23, 0.5);
+  gap: 12px;
+  height: calc(var(--dock-size) + 22px);
+  padding: 0 14px 12px;
   transform: translateX(-50%);
-  backdrop-filter: blur(8px);
 }
-.dock-item { position: relative; display: grid; width: 56px; height: 58px; flex: 0 0 56px; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; transform: translateY(0) scale(1); transform-origin: center bottom; transition: transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.dock-item:hover, .dock-item:focus-visible { z-index: 1; outline: none; transform: translateY(-9px) scale(1.24); }
-.dock-item:focus-visible .dock-icon { outline: 2px solid var(--desktop-accent); outline-offset: 5px; }
-.dock-item::before { position: absolute; bottom: 100%; left: 50%; padding: 5px 7px; border: 1px solid #172c2c; background: #f1edda; color: #172c2c; content: attr(title); font: 10px "Courier New", Courier, monospace; opacity: 0; pointer-events: none; transform: translate(-50%, 4px); transition: opacity 100ms ease, transform 100ms ease; white-space: nowrap; }
-.dock-item:hover::before, .dock-item:focus-visible::before { opacity: 1; transform: translate(-50%, -5px); }
-.dock-icon { position: relative; display: block; width: 32px; height: 32px; color: #172c2c; image-rendering: pixelated; }
-.dock-icon::before { position: absolute; top: 9px; left: 9px; width: 4px; height: 4px; background: currentColor; box-shadow: 4px 0 currentColor, 8px 0 currentColor, -4px 4px currentColor, 0 4px currentColor, 4px 4px currentColor, 8px 4px currentColor, 12px 4px currentColor, -4px 8px currentColor, 0 8px currentColor, 4px 8px currentColor, 8px 8px currentColor, 12px 8px currentColor, 0 12px currentColor, 4px 12px currentColor, 8px 12px currentColor; content: ""; }
-.dock-icon--about::before { top: 5px; left: 8px; background: #d89a7b; box-shadow: 4px 0 #d89a7b, 8px 0 #d89a7b, 12px 0 #d89a7b, 0 4px #d89a7b, 4px 4px #f1edda, 8px 4px #f1edda, 12px 4px #d89a7b, 0 8px #d89a7b, 4px 8px #d89a7b, 8px 8px #d89a7b, 12px 8px #d89a7b, 4px 12px #172c2c, 8px 12px #172c2c, 0 16px #172c2c, 12px 16px #172c2c, 4px 20px #172c2c, 8px 20px #172c2c; }
-.dock-icon--projects::before { top: 8px; left: 4px; background: #e6c878; box-shadow: 4px 0 #e6c878, 8px 0 #e6c878, 12px 0 #e6c878, 16px 0 #e6c878, 20px 0 #e6c878, 0 4px #e6c878, 4px 4px #f1edda, 8px 4px #f1edda, 12px 4px #f1edda, 16px 4px #f1edda, 20px 4px #e6c878, 0 8px #e6c878, 4px 8px #e6c878, 8px 8px #e6c878, 12px 8px #e6c878, 16px 8px #e6c878, 20px 8px #e6c878, 4px 12px #e6c878, 8px 12px #e6c878, 12px 12px #e6c878, 16px 12px #e6c878, 8px 16px #e6c878, 12px 16px #e6c878; }
-.dock-icon--achievements::before { top: 5px; left: 9px; background: #e6c878; box-shadow: 4px 0 #e6c878, 8px 0 #e6c878, 12px 0 #e6c878, -4px 4px #e6c878, 0 4px #f1edda, 4px 4px #f1edda, 8px 4px #f1edda, 12px 4px #f1edda, 16px 4px #e6c878, -4px 8px #e6c878, 0 8px #e6c878, 4px 8px #e6c878, 8px 8px #e6c878, 12px 8px #e6c878, 16px 8px #e6c878, 0 12px #e6c878, 4px 12px #e6c878, 8px 12px #e6c878, 12px 12px #e6c878, 4px 16px #172c2c, 8px 16px #172c2c, 0 20px #172c2c, 4px 20px #172c2c, 8px 20px #172c2c, 12px 20px #172c2c; }
-.dock-icon--contact::before { top: 7px; left: 5px; background: #7799a2; box-shadow: 4px 0 #7799a2, 8px 0 #7799a2, 12px 0 #7799a2, 16px 0 #7799a2, 20px 0 #7799a2, 0 4px #7799a2, 4px 4px #f1edda, 8px 4px #f1edda, 12px 4px #f1edda, 16px 4px #f1edda, 20px 4px #7799a2, 4px 8px #7799a2, 8px 8px #7799a2, 12px 8px #7799a2, 16px 8px #7799a2, 8px 12px #7799a2, 12px 12px #7799a2; }
-.dock-icon--settings::before { top: 6px; left: 6px; background: #c98967; box-shadow: 4px 0 #c98967, 8px 0 #c98967, 12px 0 #c98967, 16px 0 #c98967, 0 4px #c98967, 8px 4px #f1edda, 16px 4px #c98967, 0 8px #c98967, 4px 8px #f1edda, 8px 8px #f1edda, 12px 8px #f1edda, 16px 8px #f1edda, 20px 8px #c98967, 4px 12px #c98967, 8px 12px #c98967, 12px 12px #c98967, 16px 12px #c98967, 0 16px #c98967, 8px 16px #f1edda, 16px 16px #c98967, 4px 20px #c98967, 8px 20px #c98967, 12px 20px #c98967, 16px 20px #c98967; }
-.dock-indicator { position: absolute; bottom: 0; left: 50%; width: 4px; height: 4px; background: var(--desktop-ink); opacity: 0; transform: translateX(-50%); }
-.dock-item.is-open .dock-indicator { opacity: 1; }
-.dock-item.is-focused .dock-icon { filter: drop-shadow(0 0 4px var(--desktop-accent)); }
-
-.desktop-dock {
-  bottom: max(16px, env(safe-area-inset-bottom));
-  gap: 2px;
-  padding: 4px 6px 3px;
-  border: 2px solid #172c2c;
-  border-radius: 2px;
-  background: rgba(241, 237, 218, 0.96);
-  box-shadow: 3px 3px 0 rgba(5, 18, 23, 0.48), inset 1px 1px 0 rgba(255, 255, 255, 0.9);
-  backdrop-filter: none;
+/* The glass itself, widened as the icons spread. */
+.desktop-dock::before {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: calc(var(--dock-grow, 0px) * -1);
+  bottom: 0;
+  left: calc(var(--dock-grow, 0px) * -1);
+  border: 1px solid var(--desktop-dock-border);
+  border-radius: 20px;
+  background: var(--desktop-dock-background);
+  box-shadow: 0 12px 32px rgba(3, 8, 24, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(3, 8, 24, 0.18);
+  content: "";
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
-.desktop-dock::after { position: absolute; top: 2px; right: 5px; left: 5px; height: 1px; background: rgba(23, 44, 44, 0.14); content: ""; pointer-events: none; }
-.dock-item { width: 46px; height: 48px; flex-basis: 46px; }
-.dock-item:hover, .dock-item:focus-visible { transform: translateY(-5px) scale(1.12); }
-.dock-item.is-focused { background: rgba(230, 200, 120, 0.12); }
-.dock-indicator { background: #f1edda; box-shadow: 0 0 5px rgba(241, 237, 218, 0.65); }
-.dock-item.is-open .dock-indicator { opacity: 1; }
+.dock-item { position: relative; display: block; width: var(--dock-size); height: var(--dock-size); flex: 0 0 auto; padding: 0; border: 0; background: transparent; cursor: var(--cursor-hand, pointer); will-change: transform; }
+.dock-item:focus-visible { outline: none; }
+.dock-item:focus-visible .dock-icon { outline: 2px solid var(--desktop-accent); outline-offset: 3px; }
+.dock-icon { display: block; width: 100%; height: 100%; border-radius: 12.5%; box-shadow: 0 3px 6px rgba(3, 8, 24, 0.4); image-rendering: pixelated; transform-origin: 50% 100%; will-change: transform; }
+.dock-item.is-launching .dock-icon { animation: dock-bounce 640ms cubic-bezier(0.3, 0, 0.3, 1); }
+@keyframes dock-bounce { 0%, 55%, 100% { translate: 0 0; } 28% { translate: 0 -20px; } 76% { translate: 0 -7px; } }
+.dock-item::before { position: absolute; bottom: calc(100% + 12px); left: 50%; padding: 4px 9px; border: 1px solid rgba(226, 232, 255, 0.2); border-radius: 6px; background: rgba(12, 18, 40, 0.82); color: #f1edda; content: attr(data-label); font: 11px "Courier New", Courier, monospace; opacity: 0; pointer-events: none; transform: translate(-50%, 4px); transition: opacity 120ms ease, transform 120ms ease; white-space: nowrap; }
+.dock-item:hover::before, .dock-item:focus-visible::before { opacity: 1; transform: translate(-50%, calc(var(--dock-lift, 0px) * -1)); }
+/* Open windows get a dot under their icon; the active one stretches into a glowing accent bar. */
+.dock-indicator { position: absolute; bottom: -9px; left: 50%; width: 5px; height: 5px; border-radius: 3px; background: var(--system-bar-foreground); opacity: 0; transform: translateX(-50%); transition: opacity 160ms ease, width 200ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 160ms ease, box-shadow 160ms ease; }
+.dock-item.is-open .dock-indicator { opacity: 0.8; }
+.dock-item.is-focused .dock-indicator { width: 18px; background: var(--desktop-accent); box-shadow: 0 0 8px var(--desktop-accent); opacity: 1; }
+.dock-item.is-focused .dock-icon { box-shadow: 0 3px 6px rgba(3, 8, 24, 0.4), 0 0 14px color-mix(in srgb, var(--desktop-accent) 55%, transparent); }
 
 @media (max-width: 767px) {
   .system-menubar { height: 28px; padding: 0 12px; }
@@ -407,18 +415,15 @@ body.animations-disabled *::after {
   .notes-stamp { font-size: 64px; }
   .project-notes-copy h2 { font-size: 24px; }
   .gallery-arrow { width: 30px; height: 38px; }
-  .desktop-dock { padding: 4px 4px max(5px, env(safe-area-inset-bottom)); border-width: 1px 0 0; border-radius: 0; background: var(--desktop-dock-mobile-background); }
-  .desktop-dock::after { display: none; }
-  body.is-mobile-mode .dock-item { height: 56px; flex-basis: min(20vw, 78px); }
 }
 
-body.is-mobile-mode .desktop-dock { right: 0; bottom: 0; left: 0; justify-content: space-around; gap: 0; padding: 4px 4px max(5px, env(safe-area-inset-bottom)); border-width: 2px 0 0; box-shadow: 0 -3px 0 rgba(5, 18, 23, 0.18); transform: none; backdrop-filter: blur(12px); }
-body.is-mobile-mode .dock-item { width: min(20vw, 78px); height: 56px; flex-basis: min(20vw, 78px); grid-template-rows: 35px 12px; gap: 1px; }
-body.is-mobile-mode .dock-item:hover, body.is-mobile-mode .dock-item:focus-visible { transform: translateY(-2px); }
+body.is-mobile-mode .desktop-dock { right: 0; bottom: 0; left: 0; justify-content: space-around; gap: 0; height: auto; padding: 8px 6px max(8px, env(safe-area-inset-bottom)); transform: none; }
+body.is-mobile-mode .desktop-dock::before { border-width: 1px 0 0; border-radius: 0; background: var(--desktop-dock-mobile-background); box-shadow: 0 -8px 24px rgba(3, 8, 24, 0.25); }
+body.is-mobile-mode .dock-item { display: grid; width: min(22vw, 84px); height: auto; justify-items: center; gap: 4px; }
+body.is-mobile-mode .dock-icon { width: 40px; height: 40px; }
 body.is-mobile-mode .dock-item::before { display: none; }
-body.is-mobile-mode .dock-icon { transform: scale(0.82); }
-body.is-mobile-mode .dock-item::after { grid-row: 2; color: #172c2c; content: attr(title); font: 9px "Courier New", Courier, monospace; }
-body.is-mobile-mode .dock-indicator { bottom: 0; }
+body.is-mobile-mode .dock-item::after { color: var(--system-bar-foreground); content: attr(data-label); font: 9px "Courier New", Courier, monospace; }
+body.is-mobile-mode .dock-indicator { bottom: -5px; }
 body.is-mobile-mode .portfolio-window { inset: 46px 0 calc(74px + env(safe-area-inset-bottom)); width: 100%; height: auto; min-width: 0; min-height: 0; border-width: 0; box-shadow: none; resize: none; transform: none; }
 body.is-mobile-mode .portfolio-window.is-expanded { inset: 46px 0 calc(74px + env(safe-area-inset-bottom)); }
 body.is-mobile-mode .projects-window.is-expanded { width: auto; height: auto; max-width: none; aspect-ratio: auto; border-radius: 0; transform: none; }

@@ -991,8 +991,12 @@
     if (isOverNameStar(event)) nightScene.replayName();
   });
 
+  let overNameStar = false;
   document.addEventListener("pointermove", event => {
-    document.body.style.cursor = isOverNameStar(event) ? "pointer" : "";
+    const over = isOverNameStar(event);
+    if (over === overNameStar) return;
+    overNameStar = over;
+    document.body.style.cursor = over ? "var(--cursor-hand, pointer)" : "";
   }, { passive: true });
 
   // ---------------------------------------------------------------

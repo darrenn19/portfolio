@@ -27,6 +27,7 @@
   function setAccent(value) {
     const selected = accentButtons.find(button => button.dataset.accent === value) || accentButtons[0];
     document.documentElement.style.setProperty("--desktop-accent", selected.dataset.accent);
+    paintCursors(selected.dataset.accent);
     writeSetting(accentKey, selected.dataset.accent);
     accentButtons.forEach(button => {
       const isSelected = button === selected;
@@ -34,6 +35,121 @@
       button.setAttribute("aria-checked", String(isSelected));
       button.tabIndex = isSelected ? 0 : -1;
     });
+  }
+
+  // Old-school pixel cursors, drawn at 2x and handed to CSS as custom
+  // properties. The hand ("select" cursor) is filled with the accent colour.
+  const cursorArt = {
+    arrow: {
+      hotspot: [1, 1],
+      rows: [
+        "k...........",
+        "kk..........",
+        "kwk.........",
+        "kwwk........",
+        "kwwwk.......",
+        "kwwwwk......",
+        "kwwwwwk.....",
+        "kwwwwwwk....",
+        "kwwwwwwwk...",
+        "kwwwwwwwwk..",
+        "kwwwwwkkkkk.",
+        "kwwkwwk.....",
+        "kwk.kwwk....",
+        "kk..kwwk....",
+        "k....kwwk...",
+        "......kk...."
+      ]
+    },
+    hand: {
+      hotspot: [11, 1],
+      rows: [
+        ".....kk.........",
+        "....kwwk........",
+        "....kwwk........",
+        "....kwwk........",
+        "....kwwkkk......",
+        "....kwwkwwkkk...",
+        "....kwwkwwkwwkk.",
+        ".kk.kwwkwwkwwkwk",
+        "kwwkkwwwwwwwwkwk",
+        "kwwwkwwwwwwwwwwk",
+        ".kwwwwwwwwwwwwwk",
+        "..kwwwwwwwwwwwwk",
+        "..kwwwwwwwwwwwk.",
+        "...kwwwwwwwwwwk.",
+        "....kwwwwwwwwk..",
+        "....kkkkkkkkkk.."
+      ]
+    },
+    grab: {
+      hotspot: [16, 16],
+      rows: [
+        ".......kk.......",
+        "...kk.kwwkkk....",
+        "..kwwkkwwkwwk...",
+        "..kwwkkwwkwwkk..",
+        "..kwwkkwwkwwkwk.",
+        "...kwwkwwkwwkwwk",
+        "...kwwwwwwwwkwwk",
+        ".kk.kwwwwwwwwwwk",
+        "kwwkkwwwwwwwwwwk",
+        "kwwwkwwwwwwwwwwk",
+        ".kwwwwwwwwwwwwk.",
+        "..kwwwwwwwwwwwk.",
+        "...kwwwwwwwwwwk.",
+        "....kwwwwwwwwk..",
+        ".....kwwwwwwwk..",
+        ".....kkkkkkkkk.."
+      ]
+    },
+    grabbing: {
+      hotspot: [16, 16],
+      rows: [
+        "................",
+        "................",
+        "................",
+        "................",
+        "...kk.kk.kk.....",
+        "..kwwkwwkwwkkk..",
+        "..kwwkwwkwwkwwk.",
+        ".kkwwwwwwwwkwwk.",
+        "kwwkwwwwwwwwwwk.",
+        "kwwwwwwwwwwwwwk.",
+        ".kwwwwwwwwwwwwk.",
+        "..kwwwwwwwwwwwk.",
+        "...kwwwwwwwwwk..",
+        "....kwwwwwwwwk..",
+        ".....kwwwwwwk...",
+        ".....kkkkkkkk..."
+      ]
+    }
+  };
+
+  function cursorValue(art, fill, fallback) {
+    const scale = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = art.rows[0].length * scale;
+    canvas.height = art.rows.length * scale;
+    const context = canvas.getContext("2d");
+
+    art.rows.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        if (row[x] === ".") continue;
+        context.fillStyle = row[x] === "k" ? "#141c2e" : fill;
+        context.fillRect(x * scale, y * scale, scale, scale);
+      }
+    });
+
+    return `url("${canvas.toDataURL()}") ${art.hotspot[0]} ${art.hotspot[1]}, ${fallback}`;
+  }
+
+  function paintCursors(accent) {
+    const style = document.documentElement.style;
+    style.setProperty("--cursor-arrow", cursorValue(cursorArt.arrow, "#f1edda", "auto"));
+    style.setProperty("--cursor-hand", cursorValue(cursorArt.hand, accent, "pointer"));
+    style.setProperty("--cursor-grab", cursorValue(cursorArt.grab, "#f1edda", "grab"));
+    style.setProperty("--cursor-grabbing", cursorValue(cursorArt.grabbing, "#f1edda", "grabbing"));
   }
 
   const savedAccent = readSetting(accentKey);
@@ -504,8 +620,224 @@
 
   dock.addEventListener("click", event => {
     const button = event.target.closest("[data-target]");
-    if (button) openWindow(button.dataset.target);
+    if (!button) return;
+    // Launch bounce, as an app icon does when it opens.
+    button.classList.remove("is-launching");
+    void button.offsetWidth;
+    button.classList.add("is-launching");
+    openWindow(button.dataset.target);
   });
+  dock.addEventListener("animationend", event => {
+    event.target.closest(".dock-item")?.classList.remove("is-launching");
+  });
+
+  // Pixel-art app icons: a 16x16 glyph stamped onto a rounded colour tile.
+  // tile = [upper, lower, bottom edge, top highlight]
+  const dockIcons = {
+    about: {
+      tile: ["#e08a6a", "#c96f55", "#9a4f3f", "#f4b79a"],
+      colors: { k: "#141c2e", w: "#f1edda", s: "#a8d8e8", d: "#141c2e", g: "#8a8f8a" },
+      rows: [
+        "................",
+        "................",
+        "...kkkkkkkkkk...",
+        "...kwwwwwwwwk...",
+        "...kwsssssswk...",
+        "...kwsdssdswk...",
+        "...kwsssssswk...",
+        "...kwsdssdswk...",
+        "...kwssddsswk...",
+        "...kwsssssswk...",
+        "...kwwwwwwwwk...",
+        "...kwwwwggwwk...",
+        "...kkkkkkkkkk...",
+        "....kwwwwwwk....",
+        "....kkkkkkkk....",
+        "................"
+      ]
+    },
+    projects: {
+      tile: ["#6a5cb0", "#554795", "#3b2f70", "#9a8fd8"],
+      colors: { k: "#141c2e", w: "#f1edda" },
+      rows: [
+        "................",
+        "................",
+        "................",
+        "..kkkkkkkkkkkk..",
+        ".kwwkwwkkwwkwwk.",
+        ".kkkkkkkkkkkkkk.",
+        ".kkkkkwwkkkkkkk.",
+        ".kkkkkwwwkkkkkk.",
+        ".kkkkkwwwwkkkkk.",
+        ".kkkkkwwwkkkkkk.",
+        ".kkkkkwwkkkkkkk.",
+        ".kkkkkkkkkkkkkk.",
+        ".kwwkwwkkwwkwwk.",
+        "..kkkkkkkkkkkk..",
+        "................",
+        "................"
+      ]
+    },
+    achievements: {
+      tile: ["#34508f", "#283f78", "#1b2c58", "#6f8ccf"],
+      colors: { k: "#141c2e", y: "#f0c552", h: "#fff3b8" },
+      rows: [
+        "................",
+        "................",
+        "...kkkkkkkkkk...",
+        ".kkkyyyyyyyykkk.",
+        ".k.kyhyyyyyyk.k.",
+        ".k.kyhyyyyyyk.k.",
+        ".kkkyhyyyyyykkk.",
+        "...kyyyyyyyyk...",
+        "....kyyyyyyk....",
+        ".....kyyyyk.....",
+        "......kyyk......",
+        "......kyyk......",
+        ".....kkyykk.....",
+        "....kyyyyyyk....",
+        "....kkkkkkkk....",
+        "................"
+      ]
+    },
+    contact: {
+      tile: ["#5fb56f", "#469a58", "#2f7440", "#9be0a0"],
+      colors: { p: "#f4f0dc", d: "#2f7440" },
+      rows: [
+        "................",
+        "................",
+        "...ppp..........",
+        "..ppppp.........",
+        "..pppppd........",
+        "..ppppdd........",
+        "...pppd.........",
+        "...ppppd........",
+        "....ppppd..p....",
+        ".....ppppdppp...",
+        "......pppppppp..",
+        ".......pppppppd.",
+        ".........ppppdd.",
+        "..........dddd..",
+        "................",
+        "................"
+      ]
+    }
+  };
+
+  dock.querySelectorAll("canvas[data-icon]").forEach(canvas => {
+    const icon = dockIcons[canvas.dataset.icon];
+    const context = canvas.getContext("2d");
+
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 16; x++) {
+        // Clip the tile's corners so it reads as a rounded app icon.
+        const edgeX = Math.min(x, 15 - x);
+        const edgeY = Math.min(y, 15 - y);
+        if (edgeX + edgeY < 2) continue;
+
+        const glyph = icon.colors[icon.rows[y][x]];
+        context.fillStyle = glyph || icon.tile[y === 0 ? 3 : y === 15 ? 2 : y < 8 ? 0 : 1];
+        context.fillRect(x, y, 1, 1);
+      }
+    }
+  });
+
+  // Magnification: icons grow the closer the pointer is to them.
+  //
+  // Sizes are eased toward their targets once per frame and applied purely
+  // as transforms, measured against the icons' resting positions, so moving
+  // across the dock never triggers layout or feeds back into itself.
+  const dockItems = [...dock.querySelectorAll(".dock-item")];
+  const dockCanvases = dockItems.map(item => item.querySelector(".dock-icon"));
+  const dockScales = dockItems.map(() => 1);
+  const dockReach = 130;
+  let dockMetrics = null;
+  let dockPointerX = null;
+  let dockFrame = 0;
+
+  function measureDock() {
+    const size = dockItems[0].offsetWidth;
+    dockMetrics = {
+      left: dock.getBoundingClientRect().left + dockItems[0].offsetLeft,
+      size,
+      pitch: size + (parseFloat(getComputedStyle(dock).columnGap) || 0)
+    };
+  }
+
+  function clearDockStyles() {
+    dockScales.fill(1);
+    dock.style.removeProperty("--dock-grow");
+    dockItems.forEach((item, index) => {
+      item.style.removeProperty("transform");
+      item.style.removeProperty("--dock-lift");
+      dockCanvases[index].style.removeProperty("transform");
+    });
+  }
+
+  function tickDock() {
+    dockFrame = 0;
+    const { left, size, pitch } = dockMetrics;
+    let settling = false;
+    let total = 0;
+
+    dockItems.forEach((item, index) => {
+      let target = 1;
+      if (dockPointerX !== null) {
+        const distance = Math.abs(dockPointerX - (left + index * pitch + size / 2));
+        const pull = distance < dockReach ? Math.cos(distance / dockReach * Math.PI / 2) : 0;
+        target = 1 + pull * pull * 0.6;
+      }
+      const gap = target - dockScales[index];
+      if (Math.abs(gap) < 0.003) dockScales[index] = target;
+      else {
+        dockScales[index] += gap * 0.28;
+        settling = true;
+      }
+      total += dockScales[index] * size;
+    });
+
+    if (!settling && dockPointerX === null) {
+      clearDockStyles();
+      return;
+    }
+
+    // Lay the swollen icons out from the centre and shift each into place.
+    const grow = (total - dockItems.length * size) / 2;
+    let edge = -grow;
+    dockItems.forEach((item, index) => {
+      const width = dockScales[index] * size;
+      const shift = edge + width / 2 - (index * pitch + size / 2);
+      item.style.transform = `translate3d(${shift.toFixed(2)}px, 0, 0)`;
+      item.style.setProperty("--dock-lift", `${(width - size).toFixed(1)}px`);
+      dockCanvases[index].style.transform = `scale(${dockScales[index].toFixed(3)})`;
+      edge += width + pitch - size;
+    });
+    dock.style.setProperty("--dock-grow", `${grow.toFixed(2)}px`);
+
+    if (settling) dockFrame = requestAnimationFrame(tickDock);
+  }
+
+  function relaxDock() {
+    dockPointerX = null;
+    if (dockMetrics && !dockFrame) dockFrame = requestAnimationFrame(tickDock);
+  }
+
+  dock.addEventListener("pointermove", event => {
+    if (event.pointerType !== "mouse" || animationsDisabled || root.classList.contains("is-mobile-mode")) {
+      dockPointerX = null;
+      cancelAnimationFrame(dockFrame);
+      dockFrame = 0;
+      clearDockStyles();
+      return;
+    }
+    if (!dockMetrics) measureDock();
+    dockPointerX = event.clientX;
+    if (!dockFrame) dockFrame = requestAnimationFrame(tickDock);
+  }, { passive: true });
+  dock.addEventListener("pointerleave", relaxDock);
+  window.addEventListener("resize", () => {
+    dockMetrics = null;
+  }, { passive: true });
 
   const projectsWindow = document.querySelector(".projects-window");
   projectsWindow.addEventListener("click", event => {
@@ -567,7 +899,7 @@
       windowElement.style.transform = "translate3d(0, 0, 0)";
       windowElement.classList.add("is-dragged");
       windowElement.style.willChange = "transform";
-      root.classList.add("is-window-dragging");
+      root.classList.add("is-window-dragging", "is-window-moving");
       titlebar.setPointerCapture(event.pointerId);
 
       let latestX = startX;
@@ -599,7 +931,7 @@
         windowElement.style.top = `${finalTop}px`;
         windowElement.style.transform = "translate3d(0, 0, 0)";
         windowElement.style.willChange = "";
-        root.classList.remove("is-window-dragging");
+        root.classList.remove("is-window-dragging", "is-window-moving");
         titlebar.removeEventListener("pointermove", move);
         titlebar.removeEventListener("pointerup", stop);
         titlebar.removeEventListener("pointercancel", stop);
