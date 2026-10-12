@@ -103,6 +103,25 @@
         ".....kkkkkkkkk.."
       ]
     },
+    // Page-turn arrow, pointing right; the left one is its mirror image.
+    next: {
+      hotspot: [28, 12],
+      rows: [
+        "........k.......",
+        "........kk......",
+        "........kwk.....",
+        "........kwwk....",
+        "kkkkkkkkkwwwk...",
+        "kwwwwwwwwwwwwk..",
+        "kwwwwwwwwwwwwwk.",
+        "kwwwwwwwwwwwwk..",
+        "kkkkkkkkkwwwk...",
+        "........kwwk....",
+        "........kwk.....",
+        "........kk......",
+        "........k......."
+      ]
+    },
     grabbing: {
       hotspot: [16, 16],
       rows: [
@@ -150,6 +169,11 @@
     style.setProperty("--cursor-hand", cursorValue(cursorArt.hand, accent, "pointer"));
     style.setProperty("--cursor-grab", cursorValue(cursorArt.grab, "#f1edda", "grab"));
     style.setProperty("--cursor-grabbing", cursorValue(cursorArt.grabbing, "#f1edda", "grabbing"));
+    style.setProperty("--cursor-next", cursorValue(cursorArt.next, accent, "e-resize"));
+    style.setProperty("--cursor-previous", cursorValue({
+      hotspot: [3, 12],
+      rows: cursorArt.next.rows.map(row => [...row].reverse().join(""))
+    }, accent, "w-resize"));
   }
 
   const savedAccent = readSetting(accentKey);
@@ -221,6 +245,106 @@
 
   animationsSetting.addEventListener("change", () => {
     setAnimationsDisabled(animationsSetting.checked);
+  });
+
+  // ---------------------------------------------------------------
+  // Pixel lettering
+  //
+  // Window headings are set in a 5x7 bitmap face rather than a system
+  // font. Each word becomes one small SVG, so headings still wrap, and
+  // the heading keeps its text as an accessible label.
+  // ---------------------------------------------------------------
+
+  const pixelGlyphs = {
+    "A": ["01110","10001","10001","11111","10001","10001","10001"],
+    "B": ["11110","10001","10001","11110","10001","10001","11110"],
+    "C": ["01111","10000","10000","10000","10000","10000","01111"],
+    "D": ["11110","10001","10001","10001","10001","10001","11110"],
+    "E": ["11111","10000","10000","11110","10000","10000","11111"],
+    "F": ["11111","10000","10000","11110","10000","10000","10000"],
+    "G": ["01111","10000","10000","10111","10001","10001","01111"],
+    "H": ["10001","10001","10001","11111","10001","10001","10001"],
+    "I": ["11111","00100","00100","00100","00100","00100","11111"],
+    "J": ["00111","00010","00010","00010","10010","10010","01100"],
+    "K": ["10001","10010","10100","11000","10100","10010","10001"],
+    "L": ["10000","10000","10000","10000","10000","10000","11111"],
+    "M": ["10001","11011","10101","10101","10001","10001","10001"],
+    "N": ["10001","11001","10101","10101","10011","10001","10001"],
+    "O": ["01110","10001","10001","10001","10001","10001","01110"],
+    "P": ["11110","10001","10001","11110","10000","10000","10000"],
+    "Q": ["01110","10001","10001","10001","10101","10010","01101"],
+    "R": ["11110","10001","10001","11110","10100","10010","10001"],
+    "S": ["01111","10000","10000","01110","00001","00001","11110"],
+    "T": ["11111","00100","00100","00100","00100","00100","00100"],
+    "U": ["10001","10001","10001","10001","10001","10001","01110"],
+    "V": ["10001","10001","10001","10001","10001","01010","00100"],
+    "W": ["10001","10001","10001","10101","10101","11011","10001"],
+    "X": ["10001","10001","01010","00100","01010","10001","10001"],
+    "Y": ["10001","10001","01010","00100","00100","00100","00100"],
+    "Z": ["11111","00001","00010","00100","01000","10000","11111"],
+
+    "0": ["01110","10001","10011","10101","11001","10001","01110"],
+    "1": ["00100","01100","00100","00100","00100","00100","01110"],
+    "2": ["01110","10001","00001","00010","00100","01000","11111"],
+    "3": ["11110","00001","00001","01110","00001","00001","11110"],
+    "4": ["00010","00110","01010","10010","11111","00010","00010"],
+    "5": ["11111","10000","10000","11110","00001","00001","11110"],
+    "6": ["01110","10000","10000","11110","10001","10001","01110"],
+    "7": ["11111","00001","00010","00100","01000","01000","01000"],
+    "8": ["01110","10001","10001","01110","10001","10001","01110"],
+    "9": ["01110","10001","10001","01111","00001","00001","01110"],
+
+    ".": ["00000","00000","00000","00000","00000","00110","00110"],
+    ":": ["00000","00110","00110","00000","00110","00110","00000"],
+    "-": ["00000","00000","00000","11111","00000","00000","00000"],
+    "/": ["00001","00010","00010","00100","01000","01000","10000"],
+    ",": ["00000","00000","00000","00000","00110","00110","01100"],
+    "'": ["00100","00100","01000","00000","00000","00000","00000"],
+    "!": ["00100","00100","00100","00100","00100","00000","00100"],
+    "?": ["01110","10001","00001","00010","00100","00000","00100"],
+    "&": ["01100","10010","10100","01000","10101","10010","01101"],
+    "+": ["00000","00100","00100","11111","00100","00100","00000"]
+  };
+
+  function pixelWord(word) {
+    const svgNamespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNamespace, "svg");
+    const path = document.createElementNS(svgNamespace, "path");
+    let outline = "";
+    let width = 0;
+
+    for (const character of word) {
+      const glyph = pixelGlyphs[character] || pixelGlyphs["?"];
+      // Punctuation is trimmed to its inked columns so it sits tight to the word.
+      const columns = [...glyph[0]].map((_, x) => x).filter(x => glyph.some(row => row[x] === "1"));
+      const narrow = ".,':!".includes(character);
+      const first = narrow ? columns[0] : 0;
+      const last = narrow ? columns[columns.length - 1] : glyph[0].length - 1;
+
+      glyph.forEach((row, y) => {
+        for (let x = first; x <= last; x++) {
+          if (row[x] === "1") outline += `M${width + x - first} ${y}h1v1h-1z`;
+        }
+      });
+      width += last - first + 2;
+    }
+
+    width -= 1;
+    path.setAttribute("d", outline);
+    svg.appendChild(path);
+    svg.setAttribute("viewBox", `0 0 ${width} 7`);
+    svg.setAttribute("shape-rendering", "crispEdges");
+    svg.setAttribute("aria-hidden", "true");
+    svg.style.width = `${width / 7}em`;
+    return svg;
+  }
+
+  document.querySelectorAll(".window-content h1, .project-notes-copy h2, .notes-stamp, .book-page__title").forEach(heading => {
+    const text = heading.textContent.trim();
+    heading.setAttribute("aria-label", text);
+    heading.textContent = "";
+    heading.classList.add("pixel-heading");
+    text.toUpperCase().replace(/\u2019/g, "'").split(/\s+/).forEach(word => heading.appendChild(pixelWord(word)));
   });
 
   const clock = document.getElementById("system-clock");
@@ -420,12 +544,17 @@
 
     // A lightweight copy of the window to slice up. Whatever is scrolled out
     // of sight below or to the right (later project reels, later gallery
-    // slides) is left out, since every slice would otherwise carry it too.
+    // slides), and any hidden overlay (the book's other pages), is left out,
+    // since every slice would otherwise carry it too.
     const unseen = [];
     for (const node of windowElement.querySelectorAll("*")) {
       if (unseen.some(parent => parent.contains(node))) continue;
       const box = node.getBoundingClientRect();
-      if (box.top >= bounds.bottom || box.left >= bounds.right) unseen.push(node);
+      const style = getComputedStyle(node);
+      if (
+        box.top >= bounds.bottom || box.left >= bounds.right ||
+        (style.visibility === "hidden" && style.position === "absolute")
+      ) unseen.push(node);
     }
     unseen.forEach(node => node.setAttribute("data-genie-unseen", ""));
     // Copies do not inherit scroll positions, so note any that are in use.
@@ -809,23 +938,23 @@
     },
     achievements: {
       tile: ["#34508f", "#283f78", "#1b2c58", "#6f8ccf"],
-      colors: { k: "#141c2e", y: "#f0c552", h: "#fff3b8" },
+      colors: { k: "#141c2e", b: "#8f4a34", s: "#5a2c1e", p: "#f2e6c9", y: "#f0c552", h: "#fff3b8" },
       rows: [
         "................",
         "................",
-        "...kkkkkkkkkk...",
-        ".kkkyyyyyyyykkk.",
-        ".k.kyhyyyyyyk.k.",
-        ".k.kyhyyyyyyk.k.",
-        ".kkkyhyyyyyykkk.",
-        "...kyyyyyyyyk...",
-        "....kyyyyyyk....",
-        ".....kyyyyk.....",
-        "......kyyk......",
-        "......kyyk......",
-        ".....kkyykk.....",
-        "....kyyyyyyk....",
-        "....kkkkkkkk....",
+        "..kkkkkkkkkkkk..",
+        "..ksbbbbbbbbbk..",
+        "..ksbbbbbbbbbk..",
+        "..ksbbyyyyybbk..",
+        "..ksbyyhyyyybk..",
+        "..ksbbyyyyybbk..",
+        "..ksbbbyyybbbk..",
+        "..ksbbbbybbbbk..",
+        "..ksbbbyyybbbk..",
+        "..ksbbbbbbbbbk..",
+        "..kspppppppppk..",
+        "..kkkkkkkkkkkk..",
+        "................",
         "................"
       ]
     },
@@ -968,6 +1097,117 @@
     dockMetrics = null;
   }, { passive: true });
 
+  // ---------------------------------------------------------------
+  // Achievements book: two pages to a spread, click a page to turn it.
+  // On a phone only one page of the spread shows, and turning moves a
+  // single page at a time.
+  // ---------------------------------------------------------------
+
+  const book = document.querySelector("[data-book]");
+  const bookLeaves = book.querySelector(".book-leaves");
+  const bookSpreads = [...book.querySelectorAll(".book-spread")];
+  const bookTurns = [...book.querySelectorAll("[data-book-turn]")];
+  const bookNumber = book.querySelector(".book-page-number");
+  const bookPageCount = bookSpreads.length * 2;
+  let bookIndex = 0;
+  // Which page of the current spread a phone is showing: 0 left, 1 right.
+  let bookSide = 0;
+  let bookTurning = false;
+
+  function syncBook() {
+    const single = mobileBreakpoint.matches;
+    const page = bookIndex * 2 + bookSide;
+    bookSpreads.forEach((spread, index) => spread.classList.toggle("is-current", index === bookIndex));
+    book.dataset.side = bookSide ? "right" : "left";
+    bookTurns.forEach(button => {
+      const step = Number(button.dataset.bookTurn);
+      button.disabled = single
+        ? page + step < 0 || page + step >= bookPageCount
+        : bookIndex + step < 0 || bookIndex + step >= bookSpreads.length;
+    });
+    bookNumber.textContent = single
+      ? `PAGE ${page + 1} OF ${bookPageCount}`
+      : `PAGES ${bookIndex * 2 + 1}-${bookIndex * 2 + 2} OF ${bookPageCount}`;
+  }
+
+  function turnBook(step) {
+    if (mobileBreakpoint.matches) {
+      const page = bookIndex * 2 + bookSide + step;
+      if (page < 0 || page >= bookPageCount) return;
+      bookIndex = Math.floor(page / 2);
+      bookSide = page % 2;
+      syncBook();
+      return;
+    }
+
+    const target = bookIndex + step;
+    if (bookTurning || target < 0 || target >= bookSpreads.length) return;
+    const from = bookSpreads[bookIndex];
+    const to = bookSpreads[target];
+    bookIndex = target;
+
+    // A phone picking the book up later starts on the spread's first page.
+    bookSide = 0;
+
+    if (animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      syncBook();
+      return;
+    }
+
+    // One sheet of paper turns over the gutter. Its front is the right-hand
+    // page of the earlier spread and its back the left-hand page of the later
+    // one; turning forward lays it down to the left, turning back lifts it.
+    const earlier = step > 0 ? from : to;
+    const later = step > 0 ? to : from;
+    const leaf = document.createElement("div");
+    const front = earlier.querySelector(".book-page--right").cloneNode(true);
+    const back = later.querySelector(".book-page--left").cloneNode(true);
+    leaf.className = "book-leaf";
+    leaf.setAttribute("aria-hidden", "true");
+    front.classList.add("book-leaf__front");
+    back.classList.add("book-leaf__back");
+    leaf.append(front, back);
+
+    bookTurning = true;
+    book.classList.add("is-turning");
+    earlier.classList.add("is-under-left");
+    later.classList.add("is-under-right");
+    bookLeaves.appendChild(leaf);
+
+    const turned = { transform: "rotateY(-180deg)" };
+    const flat = { transform: "rotateY(0deg)" };
+    leaf.animate(step > 0 ? [flat, turned] : [turned, flat], {
+      duration: 640,
+      easing: "cubic-bezier(0.45, 0.05, 0.3, 1)"
+    }).addEventListener("finish", () => {
+      leaf.remove();
+      book.classList.remove("is-turning");
+      earlier.classList.remove("is-under-left");
+      later.classList.remove("is-under-right");
+      bookTurning = false;
+      syncBook();
+    }, { once: true });
+  }
+
+  book.addEventListener("click", event => {
+    const button = event.target.closest("[data-book-turn]");
+    if (button) turnBook(Number(button.dataset.bookTurn));
+  });
+  // The turn buttons lie over the pages, so pass the wheel through to the
+  // page underneath: on a short screen a full page still scrolls.
+  book.addEventListener("wheel", event => {
+    const button = event.target.closest("[data-book-turn]");
+    if (!button) return;
+    const side = Number(button.dataset.bookTurn) < 0 ? "left" : "right";
+    bookSpreads[bookIndex].querySelector(`.book-page--${side}`).scrollTop += event.deltaY;
+  }, { passive: true });
+  book.closest(".portfolio-window").addEventListener("keydown", event => {
+    if (event.key === "ArrowLeft") turnBook(-1);
+    if (event.key === "ArrowRight") turnBook(1);
+  });
+  mobileBreakpoint.addEventListener("change", syncBook);
+  syncBook();
+
   const projectsWindow = document.querySelector(".projects-window");
   projectsWindow.addEventListener("click", event => {
     const button = event.target.closest("[data-gallery-step]");
@@ -1002,6 +1242,24 @@
       if (action === "expand") {
         toggleExpanded(windowElement, event.target.closest("[data-action]"));
       }
+    });
+
+    // Double-clicking the title bar puts a resized window back to the size it
+    // opens at (set per window in the stylesheet).
+    windowElement.addEventListener("dblclick", event => {
+      // The top edge of the title bar is covered by the thin resize strips,
+      // so a double-click there counts as well.
+      const onTop = event.target.closest(".window-titlebar") || (event.target.dataset.resize || "").includes("n");
+      if (!onTop || event.target.closest("button") || root.classList.contains("is-mobile-mode")) return;
+      // An expanded window is put back first, then sized.
+      if (windowElement.classList.contains("is-expanded")) {
+        windowElement.querySelector('[data-action="expand"]').click();
+      }
+      window.getSelection()?.removeAllRanges();
+      windowElement.style.width = "";
+      windowElement.style.height = "";
+      delete windowElement.dataset.fittedHeight;
+      keepAboveDock(windowElement);
     });
 
     windowElement.addEventListener("pointerdown", event => {

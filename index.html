@@ -130,10 +130,71 @@
         <span class="window-titlebar__title" id="achievements-title">Achievements</span>
         <button class="window-control window-control--close" type="button" data-action="close" aria-label="Close Achievements window"></button>
       </header>
-      <div class="window-content empty-state">
-        <p class="eyebrow">EXPERIENCE / AWARDS</p>
-        <h1>Selected highlights.</h1>
-        <p>Work, volunteering, hackathons, and awards will be collected here.</p>
+      <div class="window-content book-content">
+        <div class="book" data-book>
+          <div class="book-leaves">
+            <div class="book-spread is-current">
+              <article class="book-page book-page--left" aria-label="Academic">
+                <p class="eyebrow">CHAPTER 01</p>
+                <h2 class="book-page__title">Academic</h2>
+                <ul class="book-entries">
+                <li><h3>Bur Oak Secondary School Honour Roll</h3><p>2023/2024, 2024/2025</p></li>
+                <li><h3>CEMC Cayley contest Certificate of Distinction</h3><p>2025</p></li>
+                <li><h3>Bur Oak Secondary School ICD201 Subject Award Winner</h3><p>2025</p></li>
+                <li><h3>Mount Joy Public School Honour Roll</h3><p>2023</p></li>
+                <li><h3>Mount Joy Public School Math Subject Award Winner</h3><p>2023</p></li>
+                <li><h3>Mount Joy Public School Physical Education Subject Award Winner</h3><p>2023</p></li>
+                <li><h3>CEMC Gauss contest Certificate of Distinction</h3><p>2023</p></li>
+                <li><h3>CEMC Gauss contest Certificate of Outstanding Achievement</h3><p>2022</p></li>
+                </ul>
+                <span class="book-page__number" aria-hidden="true">1</span>
+              </article>
+              <article class="book-page book-page--right" aria-label="Awards">
+                <p class="eyebrow">CHAPTER 02</p>
+                <h2 class="book-page__title">Awards</h2>
+                <ul class="book-entries">
+                <li><h3>Bur Oak Secondary School Varsity Baseball MVP</h3><p>2026</p></li>
+                <li><h3>Uukkamathu Kaividale Tamil Student Award of Excellence</h3><p>2025</p></li>
+                <li><h3>CFLI Canada YLP 4B Milestones Fundraiser Award Winner</h3><p>2025</p></li>
+                <li><h3>CFLI Canada YLP 1A Star Speaker Award Winner</h3><p>2023</p></li>
+                </ul>
+                <span class="book-page__number" aria-hidden="true">2</span>
+              </article>
+            </div>
+            <div class="book-spread">
+              <article class="book-page book-page--left" aria-label="Hackathons + Tech Competitions">
+                <p class="eyebrow">CHAPTER 03</p>
+                <h2 class="book-page__title">Hackathons + Tech Competitions</h2>
+                <ul class="book-entries">
+                <li><h3>UOFT Hi-Skule Designapalooza Cleanest Code Award Winner</h3><p>2026</p></li>
+                <li><h3>Ignition Hacks v7 Third Place winner</h3><p>Out of 87 teams, 2026</p></li>
+                <li><h3>Ignition Hacks v7 winner of best use of n8n</h3><p>Out of 87 teams, 2026</p></li>
+                <li><h3>SaugaHacks First Place Winner</h3><p>2026</p></li>
+                </ul>
+                <span class="book-page__number" aria-hidden="true">3</span>
+              </article>
+              <article class="book-page book-page--right" aria-label="Experiences">
+                <p class="eyebrow">CHAPTER 04</p>
+                <h2 class="book-page__title">Experiences</h2>
+                <ul class="book-entries">
+                <li><h3>Grade 9 Day Volunteer</h3><p>2026</p></li>
+                <li><h3>Markham Youth Sports Baseball Coach</h3><p>Paid, 2026</p></li>
+                <li><h3>CFLI Canada Youth Leadership Program Graduate</h3><p>2023 - 2025</p></li>
+                <li><h3>Peer Tutoring Volunteer</h3><p>2025</p></li>
+                <li><h3>Camp Juku Summer Camp Counselor Volunteer</h3><p>114 Hours, 2023</p></li>
+                <li><h3>Greensborough Seniors’ Wellness Club Yoga Performer</h3><p>2023</p></li>
+                </ul>
+                <span class="book-page__number" aria-hidden="true">4</span>
+              </article>
+            </div>
+            <button class="book-turn book-turn--previous" type="button" data-book-turn="-1" aria-label="Previous pages"></button>
+            <button class="book-turn book-turn--next" type="button" data-book-turn="1" aria-label="Next pages"></button>
+          </div>
+          <footer class="book-footer">
+            <span>CLICK A PAGE TO TURN IT</span>
+            <span class="book-page-number" aria-live="polite"></span>
+          </footer>
+        </div>
       </div>
     </section>
     <section class="portfolio-window" data-window="contact" aria-labelledby="contact-title" hidden>
