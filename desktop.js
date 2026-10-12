@@ -12,7 +12,6 @@
   const animationsKey = "portfolio-animations-disabled";
   const mobileBreakpoint = window.matchMedia("(max-width: 767px)");
   const openingAnimations = new WeakMap();
-  let openCount = 0;
   let focusedWindow = null;
   let animationsDisabled = readSetting(animationsKey) === "true";
 
@@ -405,6 +404,7 @@
 
   setAppearance(readSetting(appearanceKey) || "dark", false);
   appearanceToggle.addEventListener("click", () => {
+    setSettingsPopoverOpen(false);
     setAppearance(document.documentElement.dataset.appearance === "light" ? "dark" : "light");
   });
 
@@ -542,10 +542,11 @@
     const spoutLeft = iconBounds.left - bounds.left;
     const spoutRight = iconBounds.right - bounds.left;
 
-    // A lightweight copy of the window to slice up. Whatever is scrolled out
-    // of sight below or to the right (later project reels, later gallery
-    // slides), and any hidden overlay (the book's other pages), is left out,
-    // since every slice would otherwise carry it too.
+    // Note where everything in the window sits. Whatever is scrolled out of
+    // sight below or to the right (later project reels, later gallery
+    // slides), and any hidden overlay (the book's other pages), is left out
+    // of the slices altogether.
+    const boxes = new Map();
     const unseen = [];
     for (const node of windowElement.querySelectorAll("*")) {
       if (unseen.some(parent => parent.contains(node))) continue;
@@ -554,20 +555,46 @@
       if (
         box.top >= bounds.bottom || box.left >= bounds.right ||
         (style.visibility === "hidden" && style.position === "absolute")
-      ) unseen.push(node);
+      ) {
+        unseen.push(node);
+        continue;
+      }
+      boxes.set(node, {
+        top: box.top - bounds.top,
+        bottom: box.bottom - bounds.top,
+        width: box.width,
+        height: box.height,
+        // Only boxes can be swapped for an empty one of the same size.
+        solid: node instanceof HTMLElement && !["inline", "contents"].includes(style.display),
+        scrollLeft: node.scrollLeft,
+        scrollTop: node.scrollTop
+      });
     }
-    unseen.forEach(node => node.setAttribute("data-genie-unseen", ""));
-    // Copies do not inherit scroll positions, so note any that are in use.
-    const scrolled = [...windowElement.querySelectorAll("*")].filter(node => node.scrollTop || node.scrollLeft);
-    scrolled.forEach(node => node.setAttribute("data-genie-scroll", `${node.scrollLeft},${node.scrollTop}`));
-    const template = windowElement.cloneNode(true);
-    unseen.forEach(node => node.removeAttribute("data-genie-unseen"));
-    scrolled.forEach(node => node.removeAttribute("data-genie-scroll"));
-    template.querySelectorAll("[data-genie-unseen]").forEach(node => node.remove());
-    template.querySelectorAll("[id]").forEach(node => node.removeAttribute("id"));
-    template.removeAttribute("data-window");
 
-    // The stand-in: slices of that copy, stacked where the window sits.
+    // A copy of the window for one slice. Building, laying out and painting
+    // a whole window per slice is what makes the effect stutter, so a slice
+    // only gets the parts that cross its strip: anything wholly above or
+    // below it becomes an empty box of the same size, which keeps the rest
+    // of the layout exactly where it was.
+    const scrolled = [];
+    const copyFor = (node, top, bottom) => {
+      const copy = node.cloneNode(false);
+      copy.removeAttribute("id");
+      const box = boxes.get(node);
+      if (box && box.solid && (box.bottom <= top || box.top >= bottom)) {
+        copy.style.cssText += `; box-sizing: border-box; width: ${box.width}px; height: ${box.height}px; min-width: 0; min-height: 0; max-width: none; max-height: none; flex: none;`;
+        return copy;
+      }
+      // Copies do not inherit scroll positions, so note any that are in use.
+      if (box && (box.scrollLeft || box.scrollTop)) scrolled.push([copy, box.scrollLeft, box.scrollTop]);
+      for (const child of node.childNodes) {
+        if (child.nodeType !== Node.ELEMENT_NODE) copy.appendChild(child.cloneNode(false));
+        else if (boxes.has(child)) copy.appendChild(copyFor(child, top, bottom));
+      }
+      return copy;
+    };
+
+    // The stand-in: slices of the window, stacked where it sits.
     const stage = document.createElement("div");
     stage.className = "genie-stage";
     stage.setAttribute("aria-hidden", "true");
@@ -575,21 +602,21 @@
     const slices = Array.from({ length: genieSlices }, (_, index) => {
       const top = height * index / genieSlices;
       const bottom = height * (index + 1) / genieSlices;
-      const copy = template.cloneNode(true);
-      copy.style.cssText = `position: absolute; inset: ${-top}px auto auto 0; width: ${width}px; height: ${height}px; min-width: 0; min-height: 0; max-width: none; margin: 0; box-shadow: none; transform: none;`;
       // Each slice is a window-wide box one strip tall, showing its strip of
-      // the copy. It runs two pixels under the next slice to hide the seam.
+      // its copy. It runs two pixels under the next slice to hide the seam.
+      const copy = copyFor(windowElement, top - 1, bottom + 3);
+      copy.removeAttribute("data-window");
+      copy.style.cssText = `position: absolute; inset: ${-top}px auto auto 0; width: ${width}px; height: ${height}px; min-width: 0; min-height: 0; max-width: none; margin: 0; box-shadow: none; transform: none;`;
       const slice = document.createElement("div");
-      slice.style.cssText = `position: absolute; inset: 0 auto auto 0; width: ${width}px; height: ${bottom - top + 2}px; overflow: hidden; transform-origin: 0 0; will-change: transform;`;
+      slice.style.cssText = `position: absolute; inset: 0 auto auto 0; width: ${width}px; height: ${bottom - top + 2}px; overflow: hidden; contain: strict; visibility: hidden; transform-origin: 0 0; will-change: transform;`;
       slice.appendChild(copy);
       stage.appendChild(slice);
       return { element: slice, top, bottom };
     });
     windowElement.parentNode.appendChild(stage);
-    stage.querySelectorAll("[data-genie-scroll]").forEach(node => {
-      const [left, top] = node.dataset.genieScroll.split(",").map(Number);
-      node.scrollLeft = left;
-      node.scrollTop = top;
+    scrolled.forEach(([copy, left, top]) => {
+      copy.scrollLeft = left;
+      copy.scrollTop = top;
     });
     windowElement.classList.add("is-opening");
     // The real window stays invisible until the sheet has landed. Its usual
@@ -597,8 +624,14 @@
     windowElement.style.transition = "none";
     windowElement.style.opacity = "0";
 
+    // Laying out and painting the slices is the expensive part, and it lands
+    // on the first frame they are drawn in, while the sheet is still a sliver
+    // inside the icon. The clock counts at most 50ms per
+    // frame, so a slow one holds the sheet still for a moment instead of
+    // making it skip ahead to catch up.
     let frame = 0;
-    const startTime = performance.now();
+    let elapsed = 0;
+    let lastTime = 0;
     const animation = {
       cancel() {
         cancelAnimationFrame(frame);
@@ -615,7 +648,9 @@
     openingAnimations.set(windowElement, animation);
 
     function step(now) {
-      const progress = (now - startTime) / genieDuration;
+      if (lastTime) elapsed += Math.max(0, Math.min(50, now - lastTime));
+      lastTime = now;
+      const progress = elapsed / genieDuration;
       if (progress >= 1) {
         animation.cancel();
         return;
@@ -656,7 +691,7 @@
       }
       frame = requestAnimationFrame(step);
     }
-    step(startTime);
+    step(performance.now());
   }
 
   function addResizeHandles(windowElement) {
@@ -702,8 +737,8 @@
       const heightDelta = direction.includes("s") ? deltaY : direction.includes("n") ? -deltaY : 0;
       const maxWidth = direction.includes("w") ? fixedRight : window.innerWidth - startLeft;
       const maxHeight = direction.includes("n") ? fixedBottom - menuBottom : window.innerHeight - startTop;
-      const width = Math.max(320, Math.min(maxWidth, startWidth + widthDelta));
-      const height = Math.max(Math.min(260, maxHeight), Math.min(maxHeight, startHeight + heightDelta));
+      const width = Math.max(220, Math.min(maxWidth, startWidth + widthDelta));
+      const height = Math.max(Math.min(160, maxHeight), Math.min(maxHeight, startHeight + heightDelta));
       const left = direction.includes("w") ? fixedRight - width : startLeft;
       const top = direction.includes("n") ? Math.max(menuBottom, fixedBottom - height) : startTop;
 
@@ -816,6 +851,93 @@
     }
   }
 
+  const closedSizes = new Map();
+  window.addEventListener("resize", () => closedSizes.clear(), { passive: true });
+
+  function placeWindow(windowElement) {
+    // A freshly opened window goes where no other window is. Each window has
+    // a home in a layout that holds all four at once (Projects, then
+    // Achievements, then About above Contact); it opens there if that is
+    // free, or else in the free spot nearest to it. If the open windows
+    // leave no room at all, it takes the spot that covers the least of them.
+    if (root.classList.contains("is-mobile-mode") || windowElement.classList.contains("is-expanded")) return;
+    // Closed windows have no size until shown, so show them just to measure
+    // (once: the answer is kept until the screen or the window changes).
+    const unmeasured = windows.filter(item => item.hidden && !closedSizes.has(item));
+    unmeasured.forEach(item => { item.hidden = false; });
+    unmeasured.forEach(item => closedSizes.set(item, item.getBoundingClientRect()));
+    unmeasured.forEach(item => { item.hidden = true; });
+    const sizes = new Map(windows.map(item => [
+      item.dataset.window,
+      item.hidden ? closedSizes.get(item) : item.getBoundingClientRect()
+    ]));
+    const gap = 12;
+    const area = {
+      left: gap,
+      top: document.querySelector(".system-menubar").getBoundingClientRect().bottom + 8,
+      right: window.innerWidth - gap,
+      bottom: dock.getBoundingClientRect().top - gap
+    };
+    const bounds = windowElement.getBoundingClientRect();
+    const width = bounds.width;
+    let height = bounds.height;
+    // Shortened only when the screen is too small to hold it otherwise.
+    if (height > area.bottom - area.top) {
+      height = area.bottom - area.top;
+      windowElement.style.height = `${height}px`;
+      windowElement.dataset.fittedHeight = "true";
+    }
+
+    const others = windows
+      .filter(item => item !== windowElement && !item.hidden)
+      .map(item => item.getBoundingClientRect());
+    const maxLeft = Math.max(area.left, area.right - width);
+    const maxTop = Math.max(area.top, area.bottom - height);
+    const columns = [["projects"], ["achievements"], ["about", "contact"]];
+    const columnWidths = columns.map(column => Math.max(...column.map(id => sizes.get(id).width)));
+    const rowWidth = columnWidths.reduce((total, columnWidth) => total + columnWidth + gap, -gap);
+    const column = columns.findIndex(ids => ids.includes(windowElement.dataset.window));
+    const row = columns[column].indexOf(windowElement.dataset.window);
+    const columnHeight = columns[column].reduce((total, id) => total + sizes.get(id).height + gap, -gap);
+    const homeLeft = Math.max(area.left, Math.min(maxLeft,
+      (area.left + area.right - rowWidth) / 2 +
+      columnWidths.slice(0, column).reduce((total, columnWidth) => total + columnWidth + gap, 0)));
+    const homeTop = Math.max(area.top, Math.min(maxTop,
+      (area.top + area.bottom - columnHeight) / 2 +
+      columns[column].slice(0, row).reduce((total, id) => total + sizes.get(id).height + gap, 0)));
+    // Spots worth trying: home, the desktop's edges, and flush against or
+    // level with each open window.
+    const lefts = [homeLeft, area.left, maxLeft];
+    const tops = [homeTop, area.top, maxTop];
+    others.forEach(other => {
+      lefts.push(other.right + gap, other.left - gap - width, other.left, other.right - width);
+      tops.push(other.bottom + gap, other.top - gap - height, other.top, other.bottom - height);
+    });
+
+    let best = null;
+    for (const candidateLeft of lefts) {
+      for (const candidateTop of tops) {
+        const left = Math.max(area.left, Math.min(maxLeft, candidateLeft));
+        const top = Math.max(area.top, Math.min(maxTop, candidateTop));
+        let covered = 0;
+        for (const other of others) {
+          const overlapX = Math.min(left + width, other.right + gap) - Math.max(left, other.left - gap);
+          const overlapY = Math.min(top + height, other.bottom + gap) - Math.max(top, other.top - gap);
+          if (overlapX > 0.5 && overlapY > 0.5) covered += overlapX * overlapY;
+        }
+        const distance = Math.hypot(left - homeLeft, top - homeTop);
+        if (!best || covered < best.covered - 1 || (covered < best.covered + 1 && distance < best.distance)) {
+          best = { left, top, covered, distance };
+        }
+      }
+    }
+
+    windowElement.style.left = `${Math.round(best.left)}px`;
+    windowElement.style.top = `${Math.round(best.top)}px`;
+    windowElement.style.transform = "translate3d(0, 0, 0)";
+    windowElement.classList.add("is-dragged");
+  }
+
   function openWindow(id) {
     const windowElement = windows.find(item => item.dataset.window === id);
     if (!windowElement) return;
@@ -831,9 +953,7 @@
 
     if (windowElement.hidden) {
       windowElement.hidden = false;
-      windowElement.style.setProperty("--window-offset", `${(openCount % 5) * 22}px`);
-      openCount++;
-      keepAboveDock(windowElement);
+      placeWindow(windowElement);
       // Bring it to the front first, so the sheet pours over any open windows.
       focusWindow(windowElement);
       playGenieOpen(windowElement);
@@ -846,6 +966,7 @@
     openingAnimations.get(windowElement)?.cancel();
     openingAnimations.delete(windowElement);
     windowElement.hidden = true;
+    closedSizes.delete(windowElement);
     windowElement.classList.remove("is-closing", "is-opening", "is-expanded", "is-dragged");
     windowElement.style.left = "";
     windowElement.style.top = "";
@@ -1107,7 +1228,6 @@
   const bookLeaves = book.querySelector(".book-leaves");
   const bookSpreads = [...book.querySelectorAll(".book-spread")];
   const bookTurns = [...book.querySelectorAll("[data-book-turn]")];
-  const bookNumber = book.querySelector(".book-page-number");
   const bookPageCount = bookSpreads.length * 2;
   let bookIndex = 0;
   // Which page of the current spread a phone is showing: 0 left, 1 right.
@@ -1125,9 +1245,6 @@
         ? page + step < 0 || page + step >= bookPageCount
         : bookIndex + step < 0 || bookIndex + step >= bookSpreads.length;
     });
-    bookNumber.textContent = single
-      ? `PAGE ${page + 1} OF ${bookPageCount}`
-      : `PAGES ${bookIndex * 2 + 1}-${bookIndex * 2 + 2} OF ${bookPageCount}`;
   }
 
   function turnBook(step) {
@@ -1217,20 +1334,6 @@
       left: Number(button.dataset.galleryStep) * gallery.clientWidth,
       behavior: animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
     });
-  });
-
-  projectsWindow.querySelectorAll(".project-gallery").forEach(gallery => {
-    let scrollFrame = 0;
-    gallery.addEventListener("scroll", () => {
-      if (scrollFrame) return;
-      scrollFrame = requestAnimationFrame(() => {
-        const currentSlide = Math.round(gallery.scrollLeft / gallery.clientWidth) + 1;
-        const totalSlides = gallery.children.length;
-        const counter = gallery.closest(".project-reel").querySelector(".gallery-page");
-        counter.textContent = `${String(currentSlide).padStart(2, "0")} / ${String(totalSlides).padStart(2, "0")}`;
-        scrollFrame = 0;
-      });
-    }, { passive: true });
   });
 
   windows.forEach(windowElement => {

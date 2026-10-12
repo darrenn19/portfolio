@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#061521">
+  <!-- The site has its own dark/light switch; stop browsers recolouring it to match the system theme. -->
+  <meta name="color-scheme" content="only light">
+  <meta name="darkreader-lock">
   <title>Darren Nadarajah - Portfolio</title>
   <link rel="stylesheet" href="pixel-night.css">
 </head>
@@ -91,7 +94,6 @@
               <button class="gallery-arrow gallery-arrow--previous" type="button" data-gallery-step="-1" aria-label="Previous Project 1 slide">‹</button>
               <button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Next Project 1 slide">›</button>
             </div>
-            <footer class="reel-footer"><span>01 / 03</span><span class="gallery-page" aria-live="polite">01 / 03</span></footer>
           </article>
 
           <article class="project-reel" aria-label="Project 2 of 3">
@@ -105,7 +107,6 @@
               <button class="gallery-arrow gallery-arrow--previous" type="button" data-gallery-step="-1" aria-label="Previous Project 2 slide">‹</button>
               <button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Next Project 2 slide">›</button>
             </div>
-            <footer class="reel-footer"><span>02 / 03</span><span class="gallery-page" aria-live="polite">01 / 03</span></footer>
           </article>
 
           <article class="project-reel" aria-label="Project 3 of 3">
@@ -119,7 +120,6 @@
               <button class="gallery-arrow gallery-arrow--previous" type="button" data-gallery-step="-1" aria-label="Previous Project 3 slide">‹</button>
               <button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Next Project 3 slide">›</button>
             </div>
-            <footer class="reel-footer"><span>03 / 03</span><span class="gallery-page" aria-live="polite">01 / 03</span></footer>
           </article>
         </div>
       </div>
@@ -192,10 +192,6 @@
             <button class="book-turn book-turn--previous" type="button" data-book-turn="-1" aria-label="Previous pages"></button>
             <button class="book-turn book-turn--next" type="button" data-book-turn="1" aria-label="Next pages"></button>
           </div>
-          <footer class="book-footer">
-            <span>CLICK A PAGE TO TURN IT</span>
-            <span class="book-page-number" aria-live="polite"></span>
-          </footer>
         </div>
       </div>
     </section>
