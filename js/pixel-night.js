@@ -27,12 +27,10 @@
   ctx.imageSmoothingEnabled = false;
 
   // The night scene is drawn into this buffer only while cross-fading
-  // over the day scene.
+  // over the day scene, so it only exists for the length of a theme change.
   const scenes = window.PixelScene;
-  const nightBuffer = document.createElement("canvas");
-  nightBuffer.width = W;
-  nightBuffer.height = H;
-  const nightCtx = nightBuffer.getContext("2d", { alpha: false });
+  let nightBuffer = null;
+  let nightCtx = null;
 
   function updateVisibleLogicalWidth() {
     const canvasBounds = canvas.getBoundingClientRect();
@@ -162,9 +160,16 @@
     // Keep canvas coordinate system stable at 640x360.
     const scene = settledScene();
     if (scene) {
+      nightBuffer = nightCtx = null;
       scene.draw(ctx, now, dayProgress, visibleLogicalWidth, animationsEnabled);
     } else {
       // Mid-transition, the night scene fades out over the day scene.
+      if (!nightBuffer) {
+        nightBuffer = document.createElement("canvas");
+        nightBuffer.width = W;
+        nightBuffer.height = H;
+        nightCtx = nightBuffer.getContext("2d", { alpha: false });
+      }
       scenes.get("day").draw(ctx, now, dayProgress, visibleLogicalWidth, animationsEnabled);
       scenes.get("night").draw(nightCtx, now, dayProgress, visibleLogicalWidth, animationsEnabled);
       ctx.globalAlpha = 1 - dayProgress;

@@ -439,7 +439,8 @@ body.is-mobile-mode .book-entries { gap: 10px; margin-top: 14px; }
 body.is-mobile-mode .book-entries h3 { font-size: 13px; }
 body.is-mobile-mode .window-content .book-entries p { font-size: 11px; }
 body.is-mobile-mode .book-page__number { align-self: center; }
-body.is-mobile-mode .book-turn { top: auto; bottom: 20px; display: grid; width: 42px; height: 42px; place-items: center; border: 3px solid var(--book-cover-dark); background: var(--desktop-accent); box-shadow: var(--pixel-bevel); color: var(--win-on-accent); cursor: var(--cursor-hand, pointer); font: 700 22px/1 "Courier New", Courier, monospace; }
+/* Above the entries' links (z-index 6), which the arrows sit over on a small page. */
+body.is-mobile-mode .book-turn { z-index: 8; top: auto; bottom: 20px; display: grid; width: 42px; height: 42px; place-items: center; border: 3px solid var(--book-cover-dark); background: var(--desktop-accent); box-shadow: var(--pixel-bevel); color: var(--win-on-accent); cursor: var(--cursor-hand, pointer); font: 700 22px/1 "Courier New", Courier, monospace; }
 body.is-mobile-mode .book-turn--previous { left: 22px; }
 body.is-mobile-mode .book-turn--previous::after { content: "<"; }
 body.is-mobile-mode .book-turn--next { right: 22px; }

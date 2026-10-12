@@ -209,15 +209,20 @@ window.PixelScene = (() => {
       return ((color & 255) * 0.3 + ((color >> 8) & 255) * 0.59 + ((color >> 16) & 255) * 0.11) / 255;
     }
 
+    // Layers are painted pixel by pixel into a buffer, then committed to a
+    // canvas. Only the canvas is needed to draw the scene, so the buffers are
+    // let go once every layer is built (see releaseLayerPixels).
+    const layerPixels = [];
+
     function makeLayer(w = W, h = H) {
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
       const layerCtx = canvas.getContext("2d");
-      const image = layerCtx.createImageData(w, h);
-      const px = new Uint32Array(image.data.buffer);
+      let image = layerCtx.createImageData(w, h);
+      let px = new Uint32Array(image.data.buffer);
 
-      return {
+      const layer = {
         canvas,
         px,
         set(x, y, color) {
@@ -230,6 +235,15 @@ window.PixelScene = (() => {
           layerCtx.putImageData(image, 0, 0);
         }
       };
+      layerPixels.push(() => {
+        image = px = layer.px = null;
+      });
+      return layer;
+    }
+
+    function releaseLayerPixels() {
+      layerPixels.forEach(release => release());
+      layerPixels.length = 0;
     }
 
     function stamp(layer, rows, x, y, colors) {
@@ -1025,6 +1039,7 @@ window.PixelScene = (() => {
     }));
 
     const mist = [buildMistStrip(26, 170), buildMistStrip(18, 190)];
+    releaseLayerPixels();
 
     // ---------------------------------------------------------------
     // Animated scene data
