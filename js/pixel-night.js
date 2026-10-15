@@ -1,15 +1,4 @@
-/*
-  PIXEL NIGHT V2
-  ------------------------------------------------------------------
-  Everything is rendered in a 640x360 logical coordinate system.
-  It is then scaled to the viewport with nearest-neighbour rendering.
 
-  The scenery itself lives in pixel-scene.js, which paints one scene
-  in night colours and again in day colours. This file owns the
-  visible canvas: it picks the scene for the current appearance,
-  cross-fades the two while the theme changes, and runs the frame loop.
-  ------------------------------------------------------------------
-*/
 
 (() => {
   "use strict";

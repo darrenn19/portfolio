@@ -1,26 +1,4 @@
-/*
-  PIXEL NIGHT V2
-  ------------------------------------------------------------------
-  Lightweight, full-viewport, no-scroll animated background.
-  The actual scene is drawn on a low-resolution canvas and then
-  scaled up with image-rendering: pixelated. This creates a real
-  pixel-art look instead of fake "blocky" CSS shapes.
-
-  There are:
-    - no images
-    - no SVGs
-    - no animation libraries
-    - no external fonts
-    - no external requests
-  ------------------------------------------------------------------
-*/
-
 :root {
-  /*
-    Colours follow the site's own dark/light switch and nothing else:
-    "only light" opts out of the browser's automatic dark theme, which
-    would otherwise recolour windows and text when the system is dark.
-  */
   color-scheme: only light;
   --pixel-night-bg: #061521;
   --pixel-night-backdrop:
