@@ -342,7 +342,7 @@
     return svg;
   }
 
-  document.querySelectorAll(".window-content h1, .project-notes-copy h2, .notes-stamp, .book-page__title").forEach(heading => {
+  document.querySelectorAll(".window-content h1, .book-page__title").forEach(heading => {
     const text = heading.textContent.trim();
     heading.setAttribute("aria-label", text);
     heading.textContent = "";
@@ -1561,17 +1561,113 @@
   });
   mobileBreakpoint.addEventListener("change", syncBook);
   new ResizeObserver(paginateBook).observe(bookLeaves);
+  // Laying the book out takes a moment, so it is done ahead of time while
+  // the page is idle (in an invisible, unplaced window of the usual size),
+  // instead of when the window opens and its opening animation needs the time.
+  const bookWindow = book.closest(".portfolio-window");
+  (window.requestIdleCallback || window.setTimeout)(() => {
+    if (!bookWindow.hidden) return;
+    bookWindow.style.visibility = "hidden";
+    bookWindow.hidden = false;
+    paginateBook();
+    bookWindow.hidden = true;
+    bookWindow.style.visibility = "";
+  });
   syncBook();
+
+  // ---------------------------------------------------------------
+  // Projects: a feed of reels, each a carousel post as on Instagram.
+  // ---------------------------------------------------------------
+
+  // Line icons, drawn on a 24-unit grid.
+  const reelIcons = {
+    menu: "M4 6h16M4 12h12M4 18h8",
+    close: "M6 6l12 12M18 6 6 18",
+    "chevron-left": "M15 5l-7 7 7 7",
+    "chevron-right": "M9 5l7 7-7 7"
+  };
+
+  document.querySelectorAll(".reel-icon[data-icon]").forEach(slot => {
+    const svgNamespace = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNamespace, "svg");
+    const path = document.createElementNS(svgNamespace, "path");
+    path.setAttribute("d", reelIcons[slot.dataset.icon]);
+    svg.appendChild(path);
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("class", "reel-icon");
+    svg.setAttribute("aria-hidden", "true");
+    slot.replaceWith(svg);
+  });
 
   const projectsWindow = document.querySelector(".projects-window");
   projectsWindow.addEventListener("click", event => {
-    const button = event.target.closest("[data-gallery-step]");
-    if (!button) return;
-    const gallery = button.closest(".reel-carousel-shell").querySelector(".project-gallery");
-    gallery.scrollBy({
-      left: Number(button.dataset.galleryStep) * gallery.clientWidth,
-      behavior: animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-    });
+    const scrollBehavior = animationsDisabled || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    const step = event.target.closest("[data-gallery-step]");
+    if (step) {
+      const gallery = step.closest(".reel-stage").querySelector(".project-gallery");
+      gallery.scrollBy({ left: Number(step.dataset.galleryStep) * gallery.clientWidth, behavior: scrollBehavior });
+      return;
+    }
+    // A dot jumps straight to its slide.
+    const dot = event.target.closest("[data-slide]");
+    if (dot) {
+      const gallery = dot.closest(".reel-stage").querySelector(".project-gallery");
+      gallery.scrollTo({ left: Number(dot.dataset.slide) * gallery.clientWidth, behavior: scrollBehavior });
+      return;
+    }
+    // The corner button opens the description; a click anywhere else in the
+    // reel (but the sheet itself) closes it.
+    const sheetButton = event.target.closest("[data-reel-sheet]");
+    if (sheetButton) {
+      setReelSheet(sheetButton, sheetButton.getAttribute("aria-expanded") !== "true");
+      return;
+    }
+    const closeButton = event.target.closest("[data-reel-sheet-close]");
+    if (closeButton) {
+      closeReelSheets();
+      closeButton.closest(".project-reel").querySelector("[data-reel-sheet]").focus();
+      return;
+    }
+    if (!event.target.closest(".reel-sheet")) closeReelSheets();
+  });
+
+  function setReelSheet(button, open) {
+    const sheet = document.getElementById(button.getAttribute("aria-controls"));
+    sheet.classList.toggle("is-open", open);
+    sheet.inert = !open;
+    button.setAttribute("aria-expanded", String(open));
+    button.setAttribute("aria-label", open ? "Hide description" : "Show description");
+  }
+
+  function closeReelSheets() {
+    projectsWindow.querySelectorAll('[data-reel-sheet][aria-expanded="true"]').forEach(button => setReelSheet(button, false));
+  }
+
+  projectsWindow.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeReelSheets();
+  });
+  // Moving on to another reel puts the description away.
+  projectsWindow.querySelector(".project-feed").addEventListener("scroll", closeReelSheets, { passive: true });
+
+  // Each reel's counter, dots and arrows follow its slides.
+  projectsWindow.querySelectorAll(".project-reel").forEach(reel => {
+    const gallery = reel.querySelector(".project-gallery");
+    const slideCount = gallery.children.length;
+    const counter = reel.querySelector(".reel-counter");
+    const dots = [...reel.querySelectorAll(".reel-dots [data-slide]")];
+    const [previous, next] = reel.querySelectorAll("[data-gallery-step]");
+    let shown = -1;
+    const syncSlides = () => {
+      const index = Math.round(gallery.scrollLeft / Math.max(1, gallery.clientWidth));
+      if (index === shown) return;
+      shown = index;
+      counter.textContent = `${index + 1}/${slideCount}`;
+      dots.forEach((dot, dotIndex) => dot.setAttribute("aria-current", String(dotIndex === index)));
+      previous.hidden = index === 0;
+      next.hidden = index === slideCount - 1;
+    };
+    gallery.addEventListener("scroll", syncSlides, { passive: true });
+    syncSlides();
   });
 
   windows.forEach(windowElement => {

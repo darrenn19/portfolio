@@ -208,8 +208,14 @@ body.has-open-window .pixel-night::after { opacity: 1; }
 .fullscreen-glyph { display: block; width: 15px; height: 15px; background: linear-gradient(currentColor, currentColor) left top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 2px 6px no-repeat; transition: transform 180ms ease; }
 .fullscreen-toggle:hover .fullscreen-glyph { transform: scale(0.84); }
 .fullscreen-exit[hidden] { display: none; }
-.fullscreen-exit { position: fixed; z-index: 100; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: grid; width: 36px; height: 36px; min-height: 0; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--system-bar-foreground) 38%, transparent); border-radius: 5px; background: color-mix(in srgb, var(--system-bar-background) 70%, transparent); color: var(--system-bar-foreground); cursor: var(--cursor-hand, pointer); font: 23px/1 "Segoe UI Symbol", sans-serif; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); backdrop-filter: blur(14px); }
-.fullscreen-exit:hover, .fullscreen-exit:focus-visible { background: color-mix(in srgb, var(--system-bar-background) 78%, var(--system-bar-foreground)); color: var(--system-bar-foreground); outline: 1px solid color-mix(in srgb, var(--system-bar-foreground) 65%, transparent); }
+/* Leaving full screen: a large pixel close button, like a window's own. */
+.fullscreen-exit { position: fixed; z-index: 100; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); width: 36px; height: 36px; min-height: 0; padding: 0; border: 3px solid var(--win-border); border-radius: 0; background: #d95b50; color: var(--win-on-accent); box-shadow: var(--pixel-bevel), 3px 3px 0 rgba(3, 8, 24, 0.45); cursor: var(--cursor-hand, pointer); }
+/* The cross, drawn pixel by pixel in 4px squares, as the window controls are. */
+.fullscreen-exit::after { position: absolute; top: 5px; left: 5px; width: 4px; height: 4px; background: currentColor; box-shadow: 16px 0, 4px 4px, 12px 4px, 8px 8px, 4px 12px, 12px 12px, 0 16px, 16px 16px; content: ""; }
+.fullscreen-exit:hover, .fullscreen-exit:focus-visible { background: #e8705f; outline: none; }
+.fullscreen-exit:focus-visible { box-shadow: var(--pixel-bevel), 0 0 0 3px var(--desktop-accent); }
+.fullscreen-exit:active { box-shadow: inset -2px -2px 0 rgba(255, 255, 255, 0.3), inset 2px 2px 0 rgba(8, 11, 30, 0.35); }
+.fullscreen-exit:active::after { transform: translate(1px, 1px); }
 .desktop-settings-popover[hidden] { display: none; }
 .desktop-settings-popover { position: fixed; z-index: 60; display: grid; width: min(276px, calc(100vw - 16px)); padding: 13px 15px 15px; border: 2px solid var(--win-border); background: var(--pixel-corner-dots), linear-gradient(var(--win-bg), var(--win-bg)) 2px 2px / calc(100% - 4px) calc(100% - 4px) no-repeat, var(--win-edge); color: var(--win-ink); clip-path: var(--pixel-corners); transform: translateY(-3px); }
 .desktop-settings-popover.is-open { transform: translateY(0); }
@@ -375,6 +381,10 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
   /* The pages' thickness, under their bottom edge. Each page draws its own,
      so it stays put while the spread around it is hidden mid-turn. */
   --book-page-edge: 0 2px 0 var(--book-line), 0 4px 0 var(--book-paper-shade);
+  /* Tiny image tiles for the leather and paper grain: cheap to draw, even
+     while the window's opening animation copies the book many times over. */
+  --book-leather-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Cpath d='M2 0h2v2H2zM0 2h2v2H0z' fill-opacity='.07'/%3E%3C/svg%3E");
+  --book-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3Cpath d='M1 0h1v1H1zM0 1h1v1H0z' fill='%23785a32' fill-opacity='.05'/%3E%3C/svg%3E");
   --stack-left: 0px;
   --stack-right: 0px;
   display: flex;
@@ -394,7 +404,7 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
     linear-gradient(45deg, var(--book-brass-dark) 0 10px, var(--book-brass) 10px 13px, transparent 13px) bottom left / 16px 16px no-repeat,
     linear-gradient(315deg, var(--book-brass-dark) 0 10px, var(--book-brass) 10px 13px, transparent 13px) bottom right / 16px 16px no-repeat,
     linear-gradient(to right, transparent calc(50% - 5px), var(--book-cover-dark) calc(50% - 5px) calc(50% + 5px), transparent calc(50% + 5px)),
-    repeating-conic-gradient(rgba(0, 0, 0, 0.07) 0 25%, transparent 0 50%) 0 0 / 4px 4px,
+    var(--book-leather-grain) 0 0 / 4px 4px,
     var(--book-cover);
   box-shadow: inset 0 0 0 2px var(--book-cover-light), 4px 4px 0 rgba(0, 0, 0, 0.32);
   /* Stitching round the edge of the cover. */
@@ -434,14 +444,12 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
 /* Mid-turn: hide the spread being left, but keep the two pages the leaf passes over. */
 .book.is-turning .book-spread.is-current { visibility: hidden; }
 .book.is-turning .book-spread.is-under-left .book-page--left, .book.is-turning .book-spread.is-under-right .book-page--right { visibility: visible; }
-.book-page { position: relative; display: flex; min-width: 0; flex-direction: column; overflow: hidden; padding: 10px 10px 6px; background-color: var(--book-paper); color: var(--book-ink); isolation: isolate; }
-/* A faint grain, so the paper does not read as a flat panel. */
-.book-page::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: repeating-conic-gradient(rgba(120, 90, 50, 0.05) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
+.book-page { position: relative; display: flex; min-width: 0; flex-direction: column; overflow: hidden; padding: 10px 10px 6px; background: var(--book-paper-grain) 0 0 / 2px 2px, var(--book-paper); color: var(--book-ink); }
 /* An invisible spread the pages are filled in, to see what fits. */
 .book-spread.book-measure { visibility: hidden; pointer-events: none; }
 /* Stepped shading into the gutter, and a stack of page edges on the outside. */
-.book-page--left { padding-left: 20px; background-image: linear-gradient(to left, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px); box-shadow: inset 3px 0 0 #fbf3dd, inset 6px 0 0 var(--book-line), inset 9px 0 0 #fbf3dd, inset 12px 0 0 var(--book-line), var(--book-page-edge); }
-.book-page--right { padding-right: 20px; border-left: 3px solid var(--book-cover-dark); background-image: linear-gradient(to right, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px); box-shadow: inset -3px 0 0 #fbf3dd, inset -6px 0 0 var(--book-line), inset -9px 0 0 #fbf3dd, inset -12px 0 0 var(--book-line), var(--book-page-edge); }
+.book-page--left { padding-left: 20px; background: linear-gradient(to left, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px), var(--book-paper-grain) 0 0 / 2px 2px, var(--book-paper); box-shadow: inset 3px 0 0 #fbf3dd, inset 6px 0 0 var(--book-line), inset 9px 0 0 #fbf3dd, inset 12px 0 0 var(--book-line), var(--book-page-edge); }
+.book-page--right { padding-right: 20px; border-left: 3px solid var(--book-cover-dark); background: linear-gradient(to right, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px), var(--book-paper-grain) 0 0 / 2px 2px, var(--book-paper); box-shadow: inset -3px 0 0 #fbf3dd, inset -6px 0 0 var(--book-line), inset -9px 0 0 #fbf3dd, inset -12px 0 0 var(--book-line), var(--book-page-edge); }
 .book-page .eyebrow { margin: 0 0 6px; color: var(--book-rule); }
 .book-page__title { margin: 0; padding-bottom: 7px; border-bottom: 3px double var(--book-line); font-size: 14px; }
 .book-page__title.pixel-heading { gap: 0.5em 0.72em; }
@@ -477,7 +485,7 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
 */
 body.is-mobile-mode .book-spread { display: block; }
 body.is-mobile-mode .book-leaves::before, body.is-mobile-mode .book-ribbon { display: none; }
-body.is-mobile-mode .book-page--left, body.is-mobile-mode .book-page--right { height: 100%; padding: 18px 20px 64px; border-left: 0; background-image: none; box-shadow: none; }
+body.is-mobile-mode .book-page--left, body.is-mobile-mode .book-page--right { height: 100%; padding: 18px 20px 64px; border-left: 0; background: var(--book-paper-grain) 0 0 / 2px 2px, var(--book-paper); box-shadow: none; }
 body.is-mobile-mode .book[data-side="left"] .book-page--right, body.is-mobile-mode .book[data-side="right"] .book-page--left { display: none; }
 body.is-mobile-mode .book-page__title { font-size: 21px; }
 body.is-mobile-mode .book-entries { gap: 10px; margin-top: 14px; }
@@ -492,42 +500,84 @@ body.is-mobile-mode .book-turn--next { right: 22px; }
 body.is-mobile-mode .book-turn--next::after { content: ">"; }
 body.is-mobile-mode .book-turn:disabled { display: none; }
 .projects-window { --projects-height: min(420px, calc(100svh - 150px)); width: calc(var(--projects-height) * 9 / 16); height: var(--projects-height); min-width: 200px; min-height: 0; overflow: hidden; border-radius: 0; }
-.projects-window .projects-content { display: block; overflow: hidden; padding: 0; background: var(--win-bg); }
+/*
+  Projects: a feed of reels in the style of Instagram's dark mode. Each reel
+  is a carousel post filling the whole window: slides that swipe sideways
+  under a counter, with dots along the bottom, and buttons in the corner,
+  one of which slides up a sheet with the description over the lower half.
+  The feed scrolls one whole reel at a time. Like the book, it keeps its own
+  colours in both appearances.
+*/
+.projects-window .projects-content { display: block; overflow: hidden; padding: 0; background: #0c1014; }
 .project-feed { width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; scroll-snap-type: y mandatory; scrollbar-width: none; }
 .project-feed::-webkit-scrollbar { display: none; }
-.project-reel { display: flex; height: 100%; min-height: 300px; flex-direction: column; gap: 4px; padding: 5px 6px 6px; border-bottom: 1px dashed var(--win-line); scroll-snap-align: start; scroll-snap-stop: always; }
-.reel-heading { display: flex; min-height: 18px; align-items: center; justify-content: space-between; gap: 12px; color: var(--win-muted); font: 700 10px "Courier New", Courier, monospace; }
-.reel-heading .eyebrow { margin: 0; color: var(--win-ink); }
-.reel-label { font-variant-numeric: tabular-nums; }
-.reel-carousel-shell { position: relative; min-height: 0; flex: 1; overflow: hidden; border: 2px solid var(--win-border); background: var(--win-bg-alt); }
+.project-reel {
+  --reel-ink: #f5f5f5;
+  --reel-muted: #a8a8a8;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: #0c1014;
+  color: var(--reel-ink);
+  font: 12px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.reel-stage { position: relative; height: 100%; background: #fafafa; }
 .project-gallery { display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-x pan-y; }
 .project-gallery::-webkit-scrollbar { display: none; }
-.project-slide { position: relative; display: flex; margin: 0; min-width: 100%; min-height: 100%; flex: 0 0 100%; align-items: center; justify-content: center; padding: 6px; scroll-snap-align: start; }
-.project-art { position: relative; display: flex; width: min(100%, 760px); height: 100%; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 12px 14px; isolation: isolate; color: #f1edda; background: #385957; }
-.project-art::before, .project-art::after { position: absolute; z-index: -1; content: ""; pointer-events: none; }
-.project-art::before { inset: 12% 25%; border: 1px solid rgba(241, 237, 218, 0.5); transform: rotate(13deg); }
-.project-art::after { top: 20%; right: 18%; width: 28%; aspect-ratio: 1; border: 1px solid rgba(241, 237, 218, 0.7); border-radius: 50%; background: var(--desktop-accent); box-shadow: -90px 90px 0 -28px #d98e72, 100px 80px 0 -38px #adc39a; }
-.project-art--one { background: #365c57; }
-.project-art--one::before { transform: rotate(-17deg); }
-.project-art--two { background: #8d6151; }
-.project-art--two::before { inset: 10% 18% 10% 42%; border-width: 12px; border-color: #e8c578; transform: rotate(8deg); }
-.project-art--two::after { top: 24%; right: 55%; width: 23%; border-radius: 0; background: #a7b8a0; box-shadow: 100px 150px 0 -35px #172c2c; }
-.project-art--three { background: #526678; }
-.project-art--three::before { inset: 12% 15%; border: 0; background: repeating-linear-gradient(135deg, transparent 0 24px, rgba(241, 237, 218, 0.36) 25px 26px); transform: none; }
-.project-art--three::after { top: 18%; right: 24%; width: 34%; border-radius: 0; background: #d99a7b; box-shadow: -120px 130px 0 -25px #e6c878; transform: rotate(45deg); }
-.project-art--detail::before { inset: 10% 12%; border-style: dashed; border-width: 2px; transform: rotate(0); }
-.project-art__eyebrow, .project-art__caption { position: relative; z-index: 1; font: 700 10px "Courier New", Courier, monospace; letter-spacing: 0.08em; }
-.project-art__display { position: relative; z-index: 1; align-self: center; font: 700 56px/0.86 "Courier New", Courier, monospace; text-align: center; }
-.project-slide--notes { flex-direction: column; align-items: flex-start; justify-content: center; gap: 14px; padding: 14px 36px; background: var(--win-bg); color: var(--win-ink); }
-.notes-stamp { color: var(--win-muted); font-size: 32px; }
-.project-notes-copy { max-width: 460px; }
-.project-notes-copy .eyebrow { margin: 0 0 14px; }
-.project-notes-copy h2 { margin: 0 0 12px; font-size: 16px; }
-.project-notes-copy p:last-child { max-width: 38ch; margin: 0; color: var(--win-muted); font-size: 12px; line-height: 1.6; }
-.gallery-arrow { position: absolute; z-index: 2; top: 50%; display: grid; width: 24px; height: 30px; place-items: center; padding: 0; border: 2px solid var(--win-border); background: var(--win-title); color: var(--win-ink); box-shadow: var(--pixel-bevel); cursor: var(--cursor-hand, pointer); font: 700 18px/1 "Courier New", Courier, monospace; transform: translateY(-50%); }
-.gallery-arrow:hover, .gallery-arrow:focus-visible { background: var(--desktop-accent); color: var(--win-on-accent); outline: none; }
-.gallery-arrow--previous { left: 8px; }
-.gallery-arrow--next { right: 8px; }
+.project-gallery:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: -2px; }
+.project-slide { display: grid; min-width: 100%; height: 100%; flex: 0 0 100%; margin: 0; place-items: center; scroll-snap-align: start; }
+.project-slide__label { color: #262626; font-size: 14px; font-weight: 600; }
+.reel-counter { position: absolute; top: 8px; right: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(38, 38, 38, 0.72); color: #fff; font-size: 11px; font-variant-numeric: tabular-nums; pointer-events: none; }
+/* Each dot jumps to its slide; the button is larger than the dot it draws, to be easy to hit. */
+.reel-dots { position: absolute; bottom: 12px; left: 50%; display: flex; padding: 0 4px; border-radius: 999px; background: rgba(26, 29, 34, 0.8); transform: translateX(-50%); }
+.reel-dots button { display: grid; width: 11px; height: 13px; place-items: center; padding: 0; border: 0; background: transparent; cursor: var(--cursor-hand, pointer); }
+.reel-dots button::before { width: 5px; height: 5px; border-radius: 50%; background: var(--reel-muted); content: ""; opacity: 0.6; }
+.reel-dots button:hover::before { opacity: 1; }
+.reel-dots button[aria-current="true"]::before { background: #fff; opacity: 1; }
+.reel-dots button:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: -1px; }
+.gallery-arrow { position: absolute; z-index: 2; top: 50%; display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.85); color: #262626; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); cursor: var(--cursor-hand, pointer); opacity: 0; transform: translateY(-50%); transition: opacity 140ms ease; }
+.reel-stage:hover .gallery-arrow, .gallery-arrow:focus-visible { opacity: 1; }
+.gallery-arrow:focus-visible { outline: 2px solid var(--desktop-accent); }
+.gallery-arrow[hidden] { display: none; }
+.gallery-arrow .reel-icon { width: 12px; height: 12px; }
+.gallery-arrow--previous { left: 6px; }
+.gallery-arrow--next { right: 6px; }
+.reel-actions { position: absolute; z-index: 3; right: 6px; bottom: 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.reel-action { display: grid; padding: 0; border: 0; background: transparent; color: var(--reel-ink); cursor: var(--cursor-hand, pointer); filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); }
+.reel-action .reel-icon { width: 20px; height: 20px; }
+.reel-action:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: 2px; }
+/* The description sheet: slides up over the lower half, dimming the slides above it. */
+.reel-sheet {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 50%;
+  overflow-y: auto;
+  padding: 6px 14px 14px;
+  border-radius: 14px 14px 0 0;
+  background: #262626;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  visibility: hidden;
+  transform: translateY(100%);
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 240ms ease, visibility 0s linear 240ms;
+}
+.reel-sheet::-webkit-scrollbar { display: none; }
+.reel-sheet.is-open { box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45); visibility: visible; transform: none; transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 240ms ease; }
+.reel-sheet__handle { display: block; width: 32px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: #555; }
+.reel-sheet__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.reel-sheet__title { margin: 0; font-size: 13px; font-weight: 700; }
+.reel-sheet__close { display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 0; border-radius: 50%; background: #363636; color: var(--reel-ink); cursor: var(--cursor-hand, pointer); }
+.reel-sheet__close .reel-icon { width: 12px; height: 12px; }
+.reel-sheet__close:focus-visible { outline: 2px solid var(--desktop-accent); }
+.reel-sheet p { margin: 0; color: var(--reel-ink); font-size: 12px; }
+body.animations-disabled .reel-sheet { transition: none; }
+.reel-icon { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .settings-content { padding-top: 38px; }
 /* Auto rearrange slides the windows to their new places. */
 .portfolio-window.is-arranging { transition: left 320ms ease, top 320ms ease; }
@@ -596,12 +646,8 @@ body.is-mobile-mode .arrange-setting-row { display: none; }
   .system-clock { min-width: 0; font-size: 9px; }
   .fullscreen-toggle { width: 22px; height: 21px; }
   .projects-window { width: 100%; height: auto; border-radius: 0; }
-  .project-reel { min-height: 100%; gap: 8px; padding: 12px 10px 10px; }
-  .project-slide { padding: 12px; }
-  .project-art { padding: 16px; }
-  .project-art__display { font-size: 72px; }
-  .project-notes-copy h2 { font-size: 24px; }
-  .gallery-arrow { width: 30px; height: 38px; }
+  .project-slide__label { font-size: 18px; }
+  .gallery-arrow { width: 28px; height: 28px; opacity: 1; }
 }
 
 /*
