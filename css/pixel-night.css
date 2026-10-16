@@ -219,7 +219,7 @@ body.has-open-window .pixel-night::after { opacity: 1; }
 .desktop-settings-popover .setting-row { min-height: 58px; }
 .desktop-settings-popover .setting-row:last-child { border-bottom: 1px solid var(--win-line); }
 .desktop-settings-popover input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--desktop-accent); cursor: var(--cursor-hand, pointer); }
-.desktop-settings-popover .appearance-setting-row { cursor: var(--cursor-arrow, default); }
+.desktop-settings-popover .appearance-setting-row, .desktop-settings-popover .arrange-setting-row { cursor: var(--cursor-arrow, default); }
 .appearance-button { flex: 0 0 auto; padding: 6px 10px; border: 3px solid var(--win-border); border-radius: 0; background: var(--desktop-accent); color: var(--win-on-accent); box-shadow: var(--pixel-bevel); cursor: var(--cursor-hand, pointer); font: 700 11px "Courier New", Courier, monospace; white-space: nowrap; }
 .appearance-button:hover { filter: brightness(1.06); }
 .appearance-button:focus-visible { outline: 2px solid var(--desktop-ink); outline-offset: 2px; }
@@ -350,14 +350,16 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
 .empty-state__pixel { width: 26px; height: 26px; margin-bottom: 28px; border: 5px solid var(--desktop-accent); box-shadow: 6px 6px 0 var(--win-border); }
 /*
   Achievements: an open book. Two paper pages sit side by side inside a
-  leather cover, split by the gutter. Each half is an invisible button that
-  turns the page, and a turning leaf (built by desktop.js) flips across the
-  gutter with one page on its front and the next on its back.
+  stitched leather cover with brass corners, split by the spine, with the
+  edges of the other pages stacked either side and a ribbon hanging out of
+  the bottom. Each half is an invisible button that turns the page, and a
+  turning sheet (built by desktop.js from upright strips, so it can bend)
+  curls across the spine with one page on its front and the next on its back.
 
   Paper and ink keep their own colours in both appearances, as a book would.
 */
-.portfolio-window[data-window="achievements"] { width: min(680px, calc(100vw - 24px)); height: min(468px, calc(100svh - 150px)); }
-.window-content.book-content { display: flex; overflow: hidden; padding: 4px; }
+.portfolio-window[data-window="achievements"] { width: min(560px, calc(100vw - 24px)); height: min(384px, calc(100svh - 150px)); min-width: 380px; min-height: 240px; }
+.window-content.book-content { display: flex; overflow: hidden; padding: 8px 10px 16px; }
 .book {
   --book-paper: #f2e6c9;
   --book-paper-shade: #e2d1aa;
@@ -367,22 +369,79 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
   --book-rule: #a8483a;
   --book-cover: #7a4a30;
   --book-cover-dark: #3a2116;
+  --book-cover-light: #9a6442;
+  --book-brass: #d4aa52;
+  --book-brass-dark: #8a6a26;
+  /* The pages' thickness, under their bottom edge. Each page draws its own,
+     so it stays put while the spread around it is hidden mid-turn. */
+  --book-page-edge: 0 2px 0 var(--book-line), 0 4px 0 var(--book-paper-shade);
+  --stack-left: 0px;
+  --stack-right: 0px;
   display: flex;
   min-height: 0;
   flex: 1;
   flex-direction: column;
 }
-.book-leaves { position: relative; min-height: 0; flex: 1; border: 3px solid var(--book-cover-dark); background: var(--book-cover); box-shadow: inset 0 0 0 3px #9a6442; perspective: 3200px; }
-.book-spread { position: absolute; inset: 5px; display: grid; grid-template-columns: 1fr 1fr; visibility: hidden; }
+.book-leaves {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  border: 3px solid var(--book-cover-dark);
+  /* Brass corners, the spine, and a fine dither for the leather's grain. */
+  background:
+    linear-gradient(135deg, var(--book-brass-dark) 0 10px, var(--book-brass) 10px 13px, transparent 13px) top left / 16px 16px no-repeat,
+    linear-gradient(225deg, var(--book-brass-dark) 0 10px, var(--book-brass) 10px 13px, transparent 13px) top right / 16px 16px no-repeat,
+    linear-gradient(45deg, var(--book-brass-dark) 0 10px, var(--book-brass) 10px 13px, transparent 13px) bottom left / 16px 16px no-repeat,
+    linear-gradient(315deg, var(--book-brass-dark) 0 10px, var(--book-brass) 10px 13px, transparent 13px) bottom right / 16px 16px no-repeat,
+    linear-gradient(to right, transparent calc(50% - 5px), var(--book-cover-dark) calc(50% - 5px) calc(50% + 5px), transparent calc(50% + 5px)),
+    repeating-conic-gradient(rgba(0, 0, 0, 0.07) 0 25%, transparent 0 50%) 0 0 / 4px 4px,
+    var(--book-cover);
+  box-shadow: inset 0 0 0 2px var(--book-cover-light), 4px 4px 0 rgba(0, 0, 0, 0.32);
+  /* Stitching round the edge of the cover. */
+  outline: 1px dashed rgba(240, 214, 170, 0.45);
+  outline-offset: -6px;
+  perspective: 1800px;
+}
+/* The edges of the other pages, either side of the open spread. */
+.book-leaves::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 9px;
+  left: calc(12px - var(--stack-left));
+  right: calc(12px - var(--stack-right));
+  background:
+    repeating-linear-gradient(to right, var(--book-paper) 0 1px, var(--book-line) 1px 2px) left / var(--stack-left) 100% no-repeat,
+    repeating-linear-gradient(to left, var(--book-paper) 0 1px, var(--book-line) 1px 2px) right / var(--stack-right) 100% no-repeat;
+}
+.book-spread { position: absolute; inset: 7px 12px 9px; display: grid; grid-template-columns: 1fr 1fr; visibility: hidden; }
+/*
+  A ribbon bookmark, kept in the last page. It lies beneath every other
+  page, so only its tail shows, hanging out of the bottom of the book, and
+  it stays put while the pages turn above it.
+*/
+.book-ribbon {
+  position: absolute;
+  pointer-events: none;
+  top: calc(100% - 20px);
+  left: calc(50% + 28px);
+  width: 8px;
+  height: 32px;
+  background: linear-gradient(to right, #c0453a 0 2px, #a8483a 2px 6px, #7e2f27 6px);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
+}
 .book-spread.is-current { visibility: visible; }
 /* Mid-turn: hide the spread being left, but keep the two pages the leaf passes over. */
 .book.is-turning .book-spread.is-current { visibility: hidden; }
 .book.is-turning .book-spread.is-under-left .book-page--left, .book.is-turning .book-spread.is-under-right .book-page--right { visibility: visible; }
-.book-page { position: relative; display: flex; min-width: 0; flex-direction: column; overflow-y: auto; padding: 10px 10px 6px; background-color: var(--book-paper); color: var(--book-ink); scrollbar-width: none; }
-.book-page::-webkit-scrollbar { display: none; }
+.book-page { position: relative; display: flex; min-width: 0; flex-direction: column; overflow: hidden; padding: 10px 10px 6px; background-color: var(--book-paper); color: var(--book-ink); isolation: isolate; }
+/* A faint grain, so the paper does not read as a flat panel. */
+.book-page::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: repeating-conic-gradient(rgba(120, 90, 50, 0.05) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
+/* An invisible spread the pages are filled in, to see what fits. */
+.book-spread.book-measure { visibility: hidden; pointer-events: none; }
 /* Stepped shading into the gutter, and a stack of page edges on the outside. */
-.book-page--left { padding-left: 20px; background-image: linear-gradient(to left, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px); box-shadow: inset 3px 0 0 #fbf3dd, inset 6px 0 0 var(--book-line), inset 9px 0 0 #fbf3dd, inset 12px 0 0 var(--book-line); }
-.book-page--right { padding-right: 20px; border-left: 3px solid var(--book-cover-dark); background-image: linear-gradient(to right, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px); box-shadow: inset -3px 0 0 #fbf3dd, inset -6px 0 0 var(--book-line), inset -9px 0 0 #fbf3dd, inset -12px 0 0 var(--book-line); }
+.book-page--left { padding-left: 20px; background-image: linear-gradient(to left, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px); box-shadow: inset 3px 0 0 #fbf3dd, inset 6px 0 0 var(--book-line), inset 9px 0 0 #fbf3dd, inset 12px 0 0 var(--book-line), var(--book-page-edge); }
+.book-page--right { padding-right: 20px; border-left: 3px solid var(--book-cover-dark); background-image: linear-gradient(to right, rgba(90, 60, 30, 0.22) 0 6px, rgba(90, 60, 30, 0.12) 6px 15px, rgba(90, 60, 30, 0.05) 15px 27px, transparent 27px); box-shadow: inset -3px 0 0 #fbf3dd, inset -6px 0 0 var(--book-line), inset -9px 0 0 #fbf3dd, inset -12px 0 0 var(--book-line), var(--book-page-edge); }
 .book-page .eyebrow { margin: 0 0 6px; color: var(--book-rule); }
 .book-page__title { margin: 0; padding-bottom: 7px; border-bottom: 3px double var(--book-line); font-size: 14px; }
 .book-page__title.pixel-heading { gap: 0.5em 0.72em; }
@@ -396,9 +455,16 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
 .book-page__number { margin-top: auto; padding-top: 4px; color: var(--book-muted); font: 700 10px "Courier New", Courier, monospace; }
 .book-page--right .book-page__number { align-self: flex-end; }
 /* The turning leaf rides above everything on the pages, links included. */
-.book-leaf { position: absolute; z-index: 7; pointer-events: none; top: 5px; bottom: 5px; left: 50%; width: calc(50% - 5px); transform-origin: 0 50%; transform-style: preserve-3d; }
-.book-leaf .book-page { position: absolute; inset: 0; backface-visibility: hidden; }
-.book-leaf__back { transform: rotateY(180deg); }
+.book-leaf { position: absolute; z-index: 7; pointer-events: none; top: 7px; bottom: 9px; left: 50%; width: calc(50% - 12px); transform-style: preserve-3d; }
+.book-leaf__strip { position: absolute; top: 0; bottom: 0; left: 0; transform-origin: 0 50%; transform-style: preserve-3d; will-change: transform; }
+.book-leaf__face { position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; }
+.book-leaf__face--back { transform: rotateY(180deg); }
+.book-leaf__face .book-page { position: absolute; top: 0; }
+.book-leaf__shade { position: absolute; inset: 0; background: #2a1a0e; opacity: 0; }
+/* Shadow the turning sheet casts on the pages beneath it, darkest at the spine. */
+.book-turn-shadow { position: absolute; z-index: 6; pointer-events: none; top: 7px; bottom: 9px; width: 0; opacity: 0; }
+.book-turn-shadow--right { left: 50%; background: linear-gradient(to right, rgba(40, 24, 10, 0.55), rgba(40, 24, 10, 0.18) 70%, transparent); }
+.book-turn-shadow--left { right: 50%; background: linear-gradient(to left, rgba(40, 24, 10, 0.55), rgba(40, 24, 10, 0.18) 70%, transparent); }
 .book-turn { position: absolute; z-index: 5; top: 0; bottom: 0; width: 50%; padding: 0; border: 0; background: transparent; }
 .book-turn--previous { left: 0; cursor: var(--cursor-previous, w-resize); }
 .book-turn--next { right: 0; cursor: var(--cursor-next, e-resize); }
@@ -410,6 +476,7 @@ body.is-window-moving, body.is-window-moving * { cursor: var(--cursor-grabbing, 
   when there is no page in that direction.
 */
 body.is-mobile-mode .book-spread { display: block; }
+body.is-mobile-mode .book-leaves::before, body.is-mobile-mode .book-ribbon { display: none; }
 body.is-mobile-mode .book-page--left, body.is-mobile-mode .book-page--right { height: 100%; padding: 18px 20px 64px; border-left: 0; background-image: none; box-shadow: none; }
 body.is-mobile-mode .book[data-side="left"] .book-page--right, body.is-mobile-mode .book[data-side="right"] .book-page--left { display: none; }
 body.is-mobile-mode .book-page__title { font-size: 21px; }
@@ -462,6 +529,10 @@ body.is-mobile-mode .book-turn:disabled { display: none; }
 .gallery-arrow--previous { left: 8px; }
 .gallery-arrow--next { right: 8px; }
 .settings-content { padding-top: 38px; }
+/* Auto rearrange slides the windows to their new places. */
+.portfolio-window.is-arranging { transition: left 320ms ease, top 320ms ease; }
+body.animations-disabled .portfolio-window.is-arranging { transition: none; }
+body.is-mobile-mode .arrange-setting-row { display: none; }
 .setting-row { display: flex; min-height: 76px; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid var(--win-line); cursor: var(--cursor-hand, pointer); }
 .setting-row span { display: grid; gap: 6px; }
 .setting-row strong { font-size: 13px; }

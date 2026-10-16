@@ -81,6 +81,10 @@ window.PixelScene = (() => {
     return DAY_TONES[hex] || hex;
   }
 
+  // When the name started being written. Shared by both scenes, so a theme
+  // change shows the name already written rather than writing it again.
+  let nameStart = null;
+
   function createScene(isDay) {
     const W = 640;
     const H = 360;
@@ -1248,7 +1252,6 @@ window.PixelScene = (() => {
     const NAME_WRITE_DELAY = 300;
     const NAME_WRITE_STEP = 28;
     const NAME_HIT_RADIUS = 5;
-    let nameStart = null;
     // Where the stars of the first letter were last drawn; clicking one replays the writing.
     let nameHotspots = [];
 

@@ -218,6 +218,10 @@
   settingsToggle.addEventListener("click", () => {
     setSettingsPopoverOpen(settingsPopover.hidden);
   });
+  document.getElementById("arrange-windows").addEventListener("click", () => {
+    arrangeWindows();
+    setSettingsPopoverOpen(false);
+  });
   settingsPopover.querySelector(".desktop-settings-popover__close").addEventListener("click", () => {
     setSettingsPopoverOpen(false);
     settingsToggle.focus();
@@ -730,6 +734,11 @@
     root.classList.add("is-window-dragging");
     handle.setPointerCapture(event.pointerId);
 
+    // Some windows need more room than others (the book must fit an entry).
+    const style = getComputedStyle(windowElement);
+    const minWidth = parseFloat(style.minWidth) || 220;
+    const minHeight = parseFloat(style.minHeight) || 160;
+
     const applyResize = () => {
       const deltaX = pointerX - startX;
       const deltaY = pointerY - startY;
@@ -737,8 +746,8 @@
       const heightDelta = direction.includes("s") ? deltaY : direction.includes("n") ? -deltaY : 0;
       const maxWidth = direction.includes("w") ? fixedRight : window.innerWidth - startLeft;
       const maxHeight = direction.includes("n") ? fixedBottom - menuBottom : window.innerHeight - startTop;
-      const width = Math.max(220, Math.min(maxWidth, startWidth + widthDelta));
-      const height = Math.max(Math.min(160, maxHeight), Math.min(maxHeight, startHeight + heightDelta));
+      const width = Math.max(minWidth, Math.min(maxWidth, startWidth + widthDelta));
+      const height = Math.max(Math.min(minHeight, maxHeight), Math.min(maxHeight, startHeight + heightDelta));
       const left = direction.includes("w") ? fixedRight - width : startLeft;
       const top = direction.includes("n") ? Math.max(menuBottom, fixedBottom - height) : startTop;
 
@@ -851,33 +860,31 @@
     }
   }
 
-  const closedSizes = new Map();
-  window.addEventListener("resize", () => closedSizes.clear(), { passive: true });
+  const windowGap = 12;
+
+  function desktopArea() {
+    return {
+      left: windowGap,
+      top: document.querySelector(".system-menubar").getBoundingClientRect().bottom + 8,
+      right: window.innerWidth - windowGap,
+      bottom: dock.getBoundingClientRect().top - windowGap
+    };
+  }
+
+  function moveWindow(windowElement, left, top) {
+    windowElement.style.left = `${Math.round(left)}px`;
+    windowElement.style.top = `${Math.round(top)}px`;
+    windowElement.style.transform = "translate3d(0, 0, 0)";
+    windowElement.classList.add("is-dragged");
+  }
 
   function placeWindow(windowElement) {
-    // A freshly opened window goes where no other window is. Each window has
-    // a home in a layout that holds all four at once (Projects, then
-    // Achievements, then About above Contact); it opens there if that is
+    // A freshly opened window goes in the middle of the desktop if that is
     // free, or else in the free spot nearest to it. If the open windows
     // leave no room at all, it takes the spot that covers the least of them.
     if (root.classList.contains("is-mobile-mode") || windowElement.classList.contains("is-expanded")) return;
-    // Closed windows have no size until shown, so show them just to measure
-    // (once: the answer is kept until the screen or the window changes).
-    const unmeasured = windows.filter(item => item.hidden && !closedSizes.has(item));
-    unmeasured.forEach(item => { item.hidden = false; });
-    unmeasured.forEach(item => closedSizes.set(item, item.getBoundingClientRect()));
-    unmeasured.forEach(item => { item.hidden = true; });
-    const sizes = new Map(windows.map(item => [
-      item.dataset.window,
-      item.hidden ? closedSizes.get(item) : item.getBoundingClientRect()
-    ]));
-    const gap = 12;
-    const area = {
-      left: gap,
-      top: document.querySelector(".system-menubar").getBoundingClientRect().bottom + 8,
-      right: window.innerWidth - gap,
-      bottom: dock.getBoundingClientRect().top - gap
-    };
+    const gap = windowGap;
+    const area = desktopArea();
     const bounds = windowElement.getBoundingClientRect();
     const width = bounds.width;
     let height = bounds.height;
@@ -893,19 +900,9 @@
       .map(item => item.getBoundingClientRect());
     const maxLeft = Math.max(area.left, area.right - width);
     const maxTop = Math.max(area.top, area.bottom - height);
-    const columns = [["projects"], ["achievements"], ["about", "contact"]];
-    const columnWidths = columns.map(column => Math.max(...column.map(id => sizes.get(id).width)));
-    const rowWidth = columnWidths.reduce((total, columnWidth) => total + columnWidth + gap, -gap);
-    const column = columns.findIndex(ids => ids.includes(windowElement.dataset.window));
-    const row = columns[column].indexOf(windowElement.dataset.window);
-    const columnHeight = columns[column].reduce((total, id) => total + sizes.get(id).height + gap, -gap);
-    const homeLeft = Math.max(area.left, Math.min(maxLeft,
-      (area.left + area.right - rowWidth) / 2 +
-      columnWidths.slice(0, column).reduce((total, columnWidth) => total + columnWidth + gap, 0)));
-    const homeTop = Math.max(area.top, Math.min(maxTop,
-      (area.top + area.bottom - columnHeight) / 2 +
-      columns[column].slice(0, row).reduce((total, id) => total + sizes.get(id).height + gap, 0)));
-    // Spots worth trying: home, the desktop's edges, and flush against or
+    const homeLeft = Math.max(area.left, Math.min(maxLeft, (area.left + area.right - width) / 2));
+    const homeTop = Math.max(area.top, Math.min(maxTop, (area.top + area.bottom - height) / 2));
+    // Spots worth trying: the middle, the desktop's edges, and flush against or
     // level with each open window.
     const lefts = [homeLeft, area.left, maxLeft];
     const tops = [homeTop, area.top, maxTop];
@@ -932,11 +929,70 @@
       }
     }
 
-    windowElement.style.left = `${Math.round(best.left)}px`;
-    windowElement.style.top = `${Math.round(best.top)}px`;
-    windowElement.style.transform = "translate3d(0, 0, 0)";
-    windowElement.classList.add("is-dragged");
+    moveWindow(windowElement, best.left, best.top);
   }
+
+  function arrangeWindows() {
+    // Puts every open window back to its usual size and lays them out side
+    // by side: Projects, then Achievements, then About above Contact. When
+    // the screen is too narrow (or short) for that, the row is squeezed
+    // evenly, so neighbours overlap by as little as possible.
+    if (root.classList.contains("is-mobile-mode")) return;
+    const open = windows.filter(item => !item.hidden && !item.classList.contains("is-closing"));
+    if (!open.length) return;
+
+    open.forEach(item => {
+      if (item.classList.contains("is-expanded")) toggleExpanded(item, item.querySelector('[data-action="expand"]'));
+      openingAnimations.get(item)?.cancel();
+      openingAnimations.delete(item);
+      item.classList.remove("is-opening");
+      item.style.width = "";
+      item.style.height = "";
+      delete item.dataset.fittedHeight;
+    });
+
+    const area = desktopArea();
+    const areaHeight = area.bottom - area.top;
+    const sizes = new Map(open.map(item => {
+      const bounds = item.getBoundingClientRect();
+      // Shortened only when the screen is too small to hold it otherwise.
+      if (bounds.height > areaHeight) {
+        item.style.height = `${areaHeight}px`;
+        item.dataset.fittedHeight = "true";
+      }
+      return [item, { width: bounds.width, height: Math.min(bounds.height, areaHeight) }];
+    }));
+    const columns = [["projects"], ["achievements"], ["about", "contact"]]
+      .map(ids => ids.map(id => open.find(item => item.dataset.window === id)).filter(Boolean))
+      .filter(column => column.length);
+    const columnWidths = columns.map(column => Math.max(...column.map(item => sizes.get(item).width)));
+    const spread = (lengths, room) => {
+      // The step between neighbours: the usual gap, or less (even negative,
+      // so they overlap) when that is the only way to fit.
+      const total = lengths.reduce((sum, length) => sum + length, 0);
+      const step = lengths.length > 1
+        ? Math.min(windowGap, (room - total) / (lengths.length - 1))
+        : 0;
+      return { step, length: total + step * (lengths.length - 1) };
+    };
+
+    open.forEach(item => item.classList.add("is-arranging"));
+    window.setTimeout(() => open.forEach(item => item.classList.remove("is-arranging")), 360);
+
+    const row = spread(columnWidths, area.right - area.left);
+    let left = Math.max(area.left, (area.left + area.right - row.length) / 2);
+    columns.forEach((column, index) => {
+      const heights = column.map(item => sizes.get(item).height);
+      const stack = spread(heights, areaHeight);
+      let top = Math.max(area.top, (area.top + area.bottom - stack.length) / 2);
+      column.forEach((item, slot) => {
+        moveWindow(item, left, top);
+        top += heights[slot] + stack.step;
+      });
+      left += columnWidths[index] + row.step;
+    });
+  }
+
 
   function openWindow(id) {
     const windowElement = windows.find(item => item.dataset.window === id);
@@ -954,6 +1010,8 @@
     if (windowElement.hidden) {
       windowElement.hidden = false;
       placeWindow(windowElement);
+      // Lay the book out before the window is copied for its opening.
+      if (windowElement.contains(book)) paginateBook();
       // Bring it to the front first, so the sheet pours over any open windows.
       focusWindow(windowElement);
       playGenieOpen(windowElement);
@@ -966,7 +1024,6 @@
     openingAnimations.get(windowElement)?.cancel();
     openingAnimations.delete(windowElement);
     windowElement.hidden = true;
-    closedSizes.delete(windowElement);
     windowElement.classList.remove("is-closing", "is-opening", "is-expanded", "is-dragged");
     windowElement.style.left = "";
     windowElement.style.top = "";
@@ -1222,23 +1279,135 @@
   // Achievements book: two pages to a spread, click a page to turn it.
   // On a phone only one page of the spread shows, and turning moves a
   // single page at a time.
+  //
+  // The pages never scroll. Instead the chapters are laid out afresh
+  // whenever the book changes size: each chapter starts a new page, and
+  // entries that do not fit run on to the next one.
   // ---------------------------------------------------------------
 
   const book = document.querySelector("[data-book]");
   const bookLeaves = book.querySelector(".book-leaves");
-  const bookSpreads = [...book.querySelectorAll(".book-spread")];
   const bookTurns = [...book.querySelectorAll("[data-book-turn]")];
-  const bookPageCount = bookSpreads.length * 2;
+  // The chapters as written in the page, before being split into pages.
+  const bookChapters = [...book.querySelectorAll(".book-spread .book-page")].map(page => ({
+    label: page.getAttribute("aria-label"),
+    eyebrow: page.querySelector(".eyebrow").textContent.trim(),
+    title: page.querySelector(".book-page__title"),
+    entries: [...page.querySelectorAll(".book-entries > li")]
+  }));
+  let bookSpreads = [...book.querySelectorAll(".book-spread")];
+  let bookPageCount = bookSpreads.length * 2;
   let bookIndex = 0;
   // Which page of the current spread a phone is showing: 0 left, 1 right.
   let bookSide = 0;
   let bookTurning = false;
+  let bookLaidOutSize = "";
+  const BOOK_TURN_TIME = 560;
+  const BOOK_STRIPS = 10;
+
+  function bookPage(chapter, continued) {
+    const page = document.createElement("article");
+    page.className = "book-page";
+    page.setAttribute("aria-label", continued ? `${chapter.label} (continued)` : chapter.label);
+    const eyebrow = document.createElement("p");
+    eyebrow.className = "eyebrow";
+    eyebrow.textContent = continued ? `${chapter.eyebrow} \u00b7 ${chapter.label.toUpperCase()} CONT.` : chapter.eyebrow;
+    const entries = document.createElement("ul");
+    entries.className = "book-entries";
+    const number = document.createElement("span");
+    number.className = "book-page__number";
+    number.setAttribute("aria-hidden", "true");
+    // Numbered once all the pages are known; held open meanwhile, for measuring.
+    number.textContent = "00";
+    page.append(eyebrow);
+    if (!continued) page.append(chapter.title.cloneNode(true));
+    page.append(entries, number);
+    return page;
+  }
+
+  function paginateBook() {
+    if (bookTurning) return;
+    const bounds = bookLeaves.getBoundingClientRect();
+    const size = `${Math.round(bounds.width)}x${Math.round(bounds.height)}:${mobileBreakpoint.matches}`;
+    if (!bounds.width || !bounds.height || size === bookLaidOutSize) return;
+    bookLaidOutSize = size;
+
+    // Keep the reader on the same entry after the pages are redrawn.
+    const shownPage = bookSpreads[bookIndex]?.querySelectorAll(".book-page")[bookSide];
+    const shownEntry = shownPage?.querySelector(".book-entries > li");
+
+    // Pages are filled inside an invisible spread of the real size, each on
+    // the side it will be shown (a phone shows every page on the left).
+    const measure = document.createElement("div");
+    measure.className = "book-spread is-current book-measure";
+    measure.setAttribute("aria-hidden", "true");
+    bookLeaves.appendChild(measure);
+    const side = book.dataset.side;
+    book.dataset.side = "left";
+
+    const pages = [];
+    const mount = page => {
+      const right = !mobileBreakpoint.matches && pages.length % 2 === 1;
+      page.classList.add(right ? "book-page--right" : "book-page--left");
+      measure.replaceChildren(...(right ? [document.createElement("div"), page] : [page]));
+    };
+    bookChapters.forEach(chapter => {
+      let page = bookPage(chapter, false);
+      mount(page);
+      chapter.entries.forEach(entry => {
+        const list = page.querySelector(".book-entries");
+        list.appendChild(entry);
+        // An entry that does not fit moves to a fresh page (unless it is the
+        // page's only one: there is nowhere better for it).
+        if (page.scrollHeight > page.clientHeight + 1 && list.children.length > 1) {
+          pages.push({ chapter, page });
+          page = bookPage(chapter, true);
+          mount(page);
+          page.querySelector(".book-entries").appendChild(entry);
+        }
+      });
+      pages.push({ chapter, page });
+    });
+    measure.remove();
+    book.dataset.side = side;
+
+    bookSpreads.forEach(spread => spread.remove());
+    bookSpreads = [];
+    for (let index = 0; index < pages.length; index += 2) {
+      const spread = document.createElement("div");
+      spread.className = "book-spread";
+      const right = pages[index + 1]?.page || document.createElement("article");
+      if (!pages[index + 1]) right.setAttribute("aria-hidden", "true");
+      right.className = "book-page book-page--right";
+      pages[index].page.className = "book-page book-page--left";
+      spread.append(pages[index].page, right);
+      bookLeaves.insertBefore(spread, bookTurns[0]);
+      bookSpreads.push(spread);
+    }
+    pages.forEach(({ page }, index) => {
+      page.querySelector(".book-page__number").textContent = index + 1;
+    });
+    bookPageCount = pages.length;
+
+    const page = Math.max(0, pages.findIndex(item => item.page.contains(shownEntry)));
+    bookIndex = Math.floor(page / 2);
+    bookSide = mobileBreakpoint.matches ? page % 2 : 0;
+    syncBook();
+  }
+
+  // The page edges either side of the spread: thicker the more sheets
+  // have been read (left) or are still to come (right).
+  function setBookStack(side, sheets) {
+    book.style.setProperty(`--stack-${side}`, `${Math.min(4, Math.max(0, sheets)) * 2}px`);
+  }
 
   function syncBook() {
     const single = mobileBreakpoint.matches;
     const page = bookIndex * 2 + bookSide;
     bookSpreads.forEach((spread, index) => spread.classList.toggle("is-current", index === bookIndex));
     book.dataset.side = bookSide ? "right" : "left";
+    setBookStack("left", bookIndex);
+    setBookStack("right", bookSpreads.length - 1 - bookIndex);
     bookTurns.forEach(button => {
       const step = Number(button.dataset.bookTurn);
       button.disabled = single
@@ -1276,53 +1445,122 @@
     // one; turning forward lays it down to the left, turning back lifts it.
     const earlier = step > 0 ? from : to;
     const later = step > 0 ? to : from;
+    const frontPage = earlier.querySelector(".book-page--right");
+    const backPage = later.querySelector(".book-page--left");
+    const width = frontPage.offsetWidth;
+    const height = frontPage.offsetHeight;
+
+    // The sheet bends, so it is cut into upright strips hinged edge to edge,
+    // each showing its slice of both pages. The outer edge is the one being
+    // pulled, so it leads and the strips nearer the spine follow it over.
+    const stripWidth = width / BOOK_STRIPS;
     const leaf = document.createElement("div");
-    const front = earlier.querySelector(".book-page--right").cloneNode(true);
-    const back = later.querySelector(".book-page--left").cloneNode(true);
     leaf.className = "book-leaf";
     leaf.setAttribute("aria-hidden", "true");
-    front.classList.add("book-leaf__front");
-    back.classList.add("book-leaf__back");
-    leaf.append(front, back);
+    const face = (page, offset, side) => {
+      const element = document.createElement("div");
+      element.className = `book-leaf__face book-leaf__face--${side}`;
+      const copy = page.cloneNode(true);
+      copy.style.cssText = `width: ${width}px; height: ${height}px; left: ${-offset}px;`;
+      const shade = document.createElement("div");
+      shade.className = "book-leaf__shade";
+      element.append(copy, shade);
+      return { element, shade };
+    };
+    const strips = Array.from({ length: BOOK_STRIPS }, (_, index) => {
+      const element = document.createElement("div");
+      element.className = "book-leaf__strip";
+      // A pixel of overlap keeps hairline gaps from opening between strips.
+      element.style.width = `${stripWidth + 1}px`;
+      const front = face(frontPage, index * stripWidth, "front");
+      const back = face(backPage, width - (index + 1) * stripWidth, "back");
+      element.append(front.element, back.element);
+      leaf.appendChild(element);
+      return { element, front: front.shade, back: back.shade };
+    });
+    // Shadows the sheet casts on the pages beneath it, either side of the spine.
+    const shadows = ["right", "left"].map(side => {
+      const element = document.createElement("div");
+      element.className = `book-turn-shadow book-turn-shadow--${side}`;
+      return element;
+    });
 
     bookTurning = true;
     book.classList.add("is-turning");
     earlier.classList.add("is-under-left");
     later.classList.add("is-under-right");
-    bookLeaves.appendChild(leaf);
+    bookLeaves.append(...shadows, leaf);
 
-    const turned = { transform: "rotateY(-180deg)" };
-    const flat = { transform: "rotateY(0deg)" };
-    leaf.animate(step > 0 ? [flat, turned] : [turned, flat], {
-      duration: 640,
-      easing: "cubic-bezier(0.45, 0.05, 0.3, 1)"
-    }).addEventListener("finish", () => {
+    // The sheet leaves the pile on one side as it lifts, and joins the pile
+    // on the other side as it lands; the edges change at those moments, so
+    // the book never shifts while nothing is touching it.
+    const liftSide = step > 0 ? "right" : "left";
+    const landSide = step > 0 ? "left" : "right";
+    const landSheets = step > 0 ? bookIndex : bookSpreads.length - 1 - bookIndex;
+    let lifted = false;
+    let landed = false;
+
+    const lag = 0.3;
+    const ease = t => t * t * (3 - 2 * t);
+    const start = performance.now();
+    const frame = now => {
+      const time = Math.min(1, (now - start) / BOOK_TURN_TIME);
+      let x = 0;
+      let z = 0;
+      strips.forEach((strip, index) => {
+        const lead = (BOOK_STRIPS - 1 - index) / (BOOK_STRIPS - 1) * lag;
+        const progress = ease(Math.max(0, Math.min(1, (time - lead) / (1 - lag))));
+        const angle = Math.PI * (step > 0 ? progress : 1 - progress);
+        strip.element.style.transform =
+          `translate3d(${x.toFixed(2)}px, 0, ${(z + 0.5).toFixed(2)}px) rotateY(${(-angle * 180 / Math.PI).toFixed(2)}deg)`;
+        // Light falls from in front, so each strip darkens as it tips away.
+        strip.front.style.opacity = (0.32 * (1 - Math.cos(angle))).toFixed(3);
+        strip.back.style.opacity = (0.32 * (1 + Math.cos(angle))).toFixed(3);
+        x += stripWidth * Math.cos(angle);
+        z += stripWidth * Math.sin(angle);
+      });
+      // `x` is now where the sheet's outer edge is, across the spine.
+      const reach = Math.max(-1, Math.min(1, x / width));
+      const travelled = step > 0 ? 1 - reach : 1 + reach;
+      if (!lifted && travelled > 0.04) {
+        lifted = true;
+        setBookStack(liftSide, step > 0 ? bookSpreads.length - 1 - bookIndex : bookIndex);
+      }
+      if (!landed && travelled > 1.96) {
+        landed = true;
+        setBookStack(landSide, landSheets);
+      }
+      shadows[0].style.width = `${Math.max(0, reach) * width}px`;
+      shadows[0].style.opacity = reach > 0 ? (0.55 * (1 - reach)).toFixed(3) : "0";
+      shadows[1].style.width = `${Math.max(0, -reach) * width}px`;
+      shadows[1].style.opacity = reach < 0 ? (0.55 * (1 + reach)).toFixed(3) : "0";
+      if (time < 1) {
+        requestAnimationFrame(frame);
+        return;
+      }
       leaf.remove();
+      shadows.forEach(shadow => shadow.remove());
       book.classList.remove("is-turning");
       earlier.classList.remove("is-under-left");
       later.classList.remove("is-under-right");
       bookTurning = false;
       syncBook();
-    }, { once: true });
+      // The book may have changed size while the page was turning.
+      paginateBook();
+    };
+    frame(start);
   }
 
   book.addEventListener("click", event => {
     const button = event.target.closest("[data-book-turn]");
     if (button) turnBook(Number(button.dataset.bookTurn));
   });
-  // The turn buttons lie over the pages, so pass the wheel through to the
-  // page underneath: on a short screen a full page still scrolls.
-  book.addEventListener("wheel", event => {
-    const button = event.target.closest("[data-book-turn]");
-    if (!button) return;
-    const side = Number(button.dataset.bookTurn) < 0 ? "left" : "right";
-    bookSpreads[bookIndex].querySelector(`.book-page--${side}`).scrollTop += event.deltaY;
-  }, { passive: true });
   book.closest(".portfolio-window").addEventListener("keydown", event => {
     if (event.key === "ArrowLeft") turnBook(-1);
     if (event.key === "ArrowRight") turnBook(1);
   });
   mobileBreakpoint.addEventListener("change", syncBook);
+  new ResizeObserver(paginateBook).observe(bookLeaves);
   syncBook();
 
   const projectsWindow = document.querySelector(".projects-window");

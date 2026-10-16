@@ -50,6 +50,10 @@
       <span><strong>Appearance</strong><small>Switch between night and day.</small></span>
       <button id="appearance-toggle" class="appearance-button" type="button">Light mode</button>
     </div>
+    <div class="setting-row arrange-setting-row">
+      <span><strong>Auto rearrange</strong><small>Lay out open windows side by side.</small></span>
+      <button id="arrange-windows" class="appearance-button" type="button">Arrange</button>
+    </div>
     <label class="setting-row" for="disable-animations">
       <span><strong>Disable animations</strong><small>Pause motion across the desktop.</small></span>
       <input id="disable-animations" type="checkbox">
@@ -133,6 +137,7 @@
       <div class="window-content book-content">
         <div class="book" data-book>
           <div class="book-leaves">
+            <span class="book-ribbon" aria-hidden="true"></span>
             <div class="book-spread is-current">
               <article class="book-page book-page--left" aria-label="Academic">
                 <p class="eyebrow">CHAPTER 01</p>
