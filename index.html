@@ -50,10 +50,6 @@
       <span><strong>Appearance</strong><small>Switch between night and day.</small></span>
       <button id="appearance-toggle" class="appearance-button" type="button">Light mode</button>
     </div>
-    <div class="setting-row arrange-setting-row">
-      <span><strong>Auto rearrange</strong><small>Lay out open windows side by side.</small></span>
-      <button id="arrange-windows" class="appearance-button" type="button">Arrange</button>
-    </div>
     <label class="setting-row" for="disable-animations">
       <span><strong>Disable animations</strong><small>Pause motion across the desktop.</small></span>
       <input id="disable-animations" type="checkbox">
@@ -61,6 +57,14 @@
   </section>
 
   <button id="fullscreen-exit" class="fullscreen-exit" type="button" aria-label="Exit full screen" title="Exit full screen" hidden></button>
+
+  <div id="desktop-context-menu" class="desktop-context-menu" role="menu" aria-label="Desktop" hidden>
+    <button type="button" role="menuitem" data-menu-action="copy" hidden>Copy</button>
+    <button type="button" role="menuitem" data-menu-action="fullscreen">Fullscreen</button>
+    <button type="button" role="menuitem" data-menu-action="close-all">Close all windows</button>
+    <button type="button" role="menuitem" data-menu-action="arrange">Rearrange windows</button>
+    <button type="button" role="menuitem" data-menu-action="chill" aria-disabled="true">Chill mode<small>Soon</small></button>
+  </div>
 
   <main class="desktop" id="desktop" aria-label="Darren's portfolio desktop">
     <section class="portfolio-window" data-window="about" aria-labelledby="about-title" hidden>

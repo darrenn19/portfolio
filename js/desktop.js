@@ -81,6 +81,28 @@
         "....kkkkkkkkkk.."
       ]
     },
+    // I-beam, shown over text that can be selected.
+    text: {
+      hotspot: [7, 16],
+      rows: [
+        "kkk.kkk",
+        "kwwkwwk",
+        "kkkwkkk",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "..kwk..",
+        "kkkwkkk",
+        "kwwkwwk",
+        "kkk.kkk"
+      ]
+    },
     grab: {
       hotspot: [16, 16],
       rows: [
@@ -166,6 +188,7 @@
     const style = document.documentElement.style;
     style.setProperty("--cursor-arrow", cursorValue(cursorArt.arrow, "#f1edda", "auto"));
     style.setProperty("--cursor-hand", cursorValue(cursorArt.hand, accent, "pointer"));
+    style.setProperty("--cursor-text", cursorValue(cursorArt.text, "#f1edda", "text"));
     style.setProperty("--cursor-grab", cursorValue(cursorArt.grab, "#f1edda", "grab"));
     style.setProperty("--cursor-grabbing", cursorValue(cursorArt.grabbing, "#f1edda", "grabbing"));
     style.setProperty("--cursor-next", cursorValue(cursorArt.next, accent, "e-resize"));
@@ -217,10 +240,6 @@
 
   settingsToggle.addEventListener("click", () => {
     setSettingsPopoverOpen(settingsPopover.hidden);
-  });
-  document.getElementById("arrange-windows").addEventListener("click", () => {
-    arrangeWindows();
-    setSettingsPopoverOpen(false);
   });
   settingsPopover.querySelector(".desktop-settings-popover__close").addEventListener("click", () => {
     setSettingsPopoverOpen(false);
@@ -412,6 +431,8 @@
     setAppearance(document.documentElement.dataset.appearance === "light" ? "dark" : "light");
   });
 
+  // On a phone (no right-click) fullscreen is entered from the menu bar and
+  // left with its own button; the stylesheet hides both on larger screens.
   const fullscreenToggle = document.getElementById("fullscreen-toggle");
   const fullscreenExit = document.getElementById("fullscreen-exit");
 
@@ -419,15 +440,113 @@
     if (enabled) setSettingsPopoverOpen(false);
     root.classList.toggle("is-fullscreen-view", enabled);
     fullscreenExit.hidden = !enabled;
-    fullscreenToggle.setAttribute("aria-pressed", String(enabled));
-    fullscreenToggle.setAttribute("aria-label", enabled ? "Exit full screen" : "Enter full screen");
   }
 
-  fullscreenToggle.addEventListener("click", () => {
-    setFullscreenView(!root.classList.contains("is-fullscreen-view"));
-  });
+  fullscreenToggle.addEventListener("click", () => setFullscreenView(true));
   fullscreenExit.addEventListener("click", () => setFullscreenView(false));
+
+  // ---------------------------------------------------------------
+  // Right-click menu
+  //
+  // Replaces the browser's own menu everywhere but on links, which keep
+  // theirs (open in new tab, copy link). Items that would do nothing
+  // right now are left out rather than greyed. With text selected, the
+  // menu offers only Copy.
+  // ---------------------------------------------------------------
+
+  const contextMenu = document.getElementById("desktop-context-menu");
+  const contextItems = Object.fromEntries(
+    [...contextMenu.querySelectorAll("[data-menu-action]")].map(item => [item.dataset.menuAction, item])
+  );
+  // Held from the moment the menu opens, in case clicking it clears the selection.
+  let copyText = "";
+
+  function visibleContextItems() {
+    return [...contextMenu.querySelectorAll("[data-menu-action]")].filter(item => !item.hidden);
+  }
+
+  function openContextMenu(x, y) {
+    const fullscreen = root.classList.contains("is-fullscreen-view");
+    const hasOpenWindow = windows.some(item => !item.hidden);
+    const mobile = root.classList.contains("is-mobile-mode");
+    const selected = window.getSelection()?.toString() || "";
+    copyText = selected.trim() ? selected : "";
+    const copying = Boolean(copyText);
+    contextItems.copy.hidden = !copying;
+    contextItems.fullscreen.hidden = copying;
+    contextItems.fullscreen.textContent = fullscreen ? "Exit fullscreen" : "Fullscreen";
+    contextItems["close-all"].hidden = copying || fullscreen || !hasOpenWindow;
+    contextItems.arrange.hidden = copying || fullscreen || mobile || !hasOpenWindow;
+    contextItems.chill.hidden = copying || mobile;
+
+    setSettingsPopoverOpen(false);
+    contextMenu.hidden = false;
+    // Open toward the pointer's lower right, flipping when it would run off screen.
+    const { width, height } = contextMenu.getBoundingClientRect();
+    const left = x + width > window.innerWidth - 4 ? x - width : x;
+    const top = y + height > window.innerHeight - 4 ? y - height : y;
+    contextMenu.style.left = `${Math.max(4, left)}px`;
+    contextMenu.style.top = `${Math.max(4, top)}px`;
+  }
+
+  function closeContextMenu() {
+    contextMenu.hidden = true;
+  }
+
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // No clipboard access (an insecure page, or permission refused): copy
+      // through a hidden text box instead.
+      const box = document.createElement("textarea");
+      box.value = text;
+      box.setAttribute("readonly", "");
+      box.style.cssText = "position: fixed; top: 0; left: 0; opacity: 0;";
+      document.body.appendChild(box);
+      box.select();
+      document.execCommand("copy");
+      box.remove();
+    }
+  }
+
+  document.addEventListener("contextmenu", event => {
+    if (event.target.closest("a[href]")) return;
+    event.preventDefault();
+    openContextMenu(event.clientX, event.clientY);
+  });
+
+  contextMenu.addEventListener("click", event => {
+    const item = event.target.closest("[data-menu-action]");
+    if (!item || item.getAttribute("aria-disabled") === "true") return;
+    closeContextMenu();
+    const action = item.dataset.menuAction;
+    if (action === "copy") copyToClipboard(copyText);
+    if (action === "fullscreen") setFullscreenView(!root.classList.contains("is-fullscreen-view"));
+    if (action === "close-all") windows.forEach(closeWindow);
+    if (action === "arrange") arrangeWindows();
+  });
+
+  document.addEventListener("pointerdown", event => {
+    if (!contextMenu.hidden && !contextMenu.contains(event.target)) closeContextMenu();
+  });
+  window.addEventListener("resize", closeContextMenu, { passive: true });
+  window.addEventListener("blur", closeContextMenu);
+
+  contextMenu.addEventListener("keydown", event => {
+    if (!["ArrowUp", "ArrowDown"].includes(event.key)) return;
+    event.preventDefault();
+    const items = visibleContextItems();
+    const index = items.indexOf(document.activeElement);
+    const step = event.key === "ArrowUp" ? -1 : 1;
+    items[(index + step + items.length) % items.length].focus();
+  });
+
   document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !contextMenu.hidden) {
+      closeContextMenu();
+      return;
+    }
     if (event.key === "Escape" && !settingsPopover.hidden) {
       setSettingsPopoverOpen(false);
       settingsToggle.focus();
@@ -1502,9 +1621,15 @@
 
     const lag = 0.3;
     const ease = t => t * t * (3 - 2 * t);
-    const start = performance.now();
+    // Painting the page copies makes the first frame slow. The clock counts
+    // at most 33ms per frame, so a slow one holds the sheet nearly still for
+    // a moment instead of making it jump ahead.
+    let elapsed = 0;
+    let lastTime = 0;
     const frame = now => {
-      const time = Math.min(1, (now - start) / BOOK_TURN_TIME);
+      if (lastTime) elapsed += Math.max(0, Math.min(33, now - lastTime));
+      lastTime = now;
+      const time = Math.min(1, elapsed / BOOK_TURN_TIME);
       let x = 0;
       let z = 0;
       strips.forEach((strip, index) => {
@@ -1530,9 +1655,9 @@
         landed = true;
         setBookStack(landSide, landSheets);
       }
-      shadows[0].style.width = `${Math.max(0, reach) * width}px`;
+      shadows[0].style.transform = `scaleX(${Math.max(0, reach).toFixed(4)})`;
       shadows[0].style.opacity = reach > 0 ? (0.55 * (1 - reach)).toFixed(3) : "0";
-      shadows[1].style.width = `${Math.max(0, -reach) * width}px`;
+      shadows[1].style.transform = `scaleX(${Math.max(0, -reach).toFixed(4)})`;
       shadows[1].style.opacity = reach < 0 ? (0.55 * (1 + reach)).toFixed(3) : "0";
       if (time < 1) {
         requestAnimationFrame(frame);
@@ -1548,7 +1673,7 @@
       // The book may have changed size while the page was turning.
       paginateBook();
     };
-    frame(start);
+    frame(performance.now());
   }
 
   book.addEventListener("click", event => {
