@@ -1579,10 +1579,13 @@
   // Projects: a feed of reels, each a carousel post as on Instagram.
   // ---------------------------------------------------------------
 
-  // Line icons, drawn on a 24-unit grid.
+  // Line icons, drawn on a 24-unit grid; brand marks are solid shapes.
   const reelIcons = {
+    github: { solid: true, d: "M12 .5A11.5 11.5 0 0 0 8.4 22.9c.6.1.8-.2.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z" },
+    devpost: { solid: true, d: "M6.2 1.5h11.6L23.6 12l-5.8 10.5H6.2L.4 12zM8 6.5v11h3.6c3.3 0 5.4-2.1 5.4-5.5s-2.1-5.5-5.4-5.5zm2.4 2.2h1.1c1.9 0 3.1 1.2 3.1 3.3s-1.2 3.3-3.1 3.3h-1.1z" },
+    youtube: { solid: true, d: "M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12a31 31 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8zM9.7 15.1V8.9l5.8 3.1z" },
+    base44: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM10 7l-3.5 6H11M9.5 10v7M16.5 7 13 13h4.5M16 10v7",
     menu: "M4 6h16M4 12h12M4 18h8",
-    close: "M6 6l12 12M18 6 6 18",
     "chevron-left": "M15 5l-7 7 7 7",
     "chevron-right": "M9 5l7 7-7 7"
   };
@@ -1591,10 +1594,12 @@
     const svgNamespace = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNamespace, "svg");
     const path = document.createElementNS(svgNamespace, "path");
-    path.setAttribute("d", reelIcons[slot.dataset.icon]);
+    const icon = reelIcons[slot.dataset.icon];
+    path.setAttribute("d", icon.d || icon);
+    path.setAttribute("fill-rule", "evenodd");
     svg.appendChild(path);
     svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("class", "reel-icon");
+    svg.setAttribute("class", icon.solid ? "reel-icon reel-icon--solid" : "reel-icon");
     svg.setAttribute("aria-hidden", "true");
     slot.replaceWith(svg);
   });
@@ -1622,10 +1627,11 @@
       setReelSheet(sheetButton, sheetButton.getAttribute("aria-expanded") !== "true");
       return;
     }
-    const closeButton = event.target.closest("[data-reel-sheet-close]");
-    if (closeButton) {
-      closeReelSheets();
-      closeButton.closest(".project-reel").querySelector("[data-reel-sheet]").focus();
+    // The handle on its own (a click, or Enter) switches between half and full.
+    const sizeButton = event.target.closest("[data-reel-sheet-size]");
+    if (sizeButton) {
+      const sheet = sizeButton.closest(".reel-sheet");
+      setReelSheetFull(sheet, !sheet.classList.contains("is-full"));
       return;
     }
     if (!event.target.closest(".reel-sheet")) closeReelSheets();
@@ -1635,9 +1641,58 @@
     const sheet = document.getElementById(button.getAttribute("aria-controls"));
     sheet.classList.toggle("is-open", open);
     sheet.inert = !open;
+    // It always opens at half height.
+    if (!open) setReelSheetFull(sheet, false);
     button.setAttribute("aria-expanded", String(open));
     button.setAttribute("aria-label", open ? "Hide description" : "Show description");
   }
+
+  function setReelSheetFull(sheet, full) {
+    sheet.classList.toggle("is-full", full);
+    sheet.querySelector("[data-reel-sheet-size]").setAttribute("aria-label", full ? "Shrink description" : "Expand description");
+  }
+
+  // Dragging the top of the sheet resizes it with the pointer. On release it
+  // settles at whichever is nearest: the whole reel, half of it, or put away.
+  projectsWindow.addEventListener("pointerdown", event => {
+    const grip = event.target.closest(".reel-sheet__grip");
+    if (!grip || event.button !== 0) return;
+    // Keep a drag from selecting the text it passes over.
+    event.preventDefault();
+    const sheet = grip.closest(".reel-sheet");
+    const reelHeight = sheet.closest(".project-reel").clientHeight;
+    const startY = event.clientY;
+    const startHeight = sheet.getBoundingClientRect().height;
+    let dragging = false;
+
+    const move = moveEvent => {
+      const travel = startY - moveEvent.clientY;
+      if (!dragging && Math.abs(travel) < 4) return;
+      dragging = true;
+      sheet.classList.add("is-dragging");
+      sheet.style.height = `${Math.max(0, Math.min(reelHeight, startHeight + travel))}px`;
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      if (!dragging) return;
+      // The click that ends a drag is not a click on whatever is under it.
+      const swallow = clickEvent => clickEvent.stopPropagation();
+      window.addEventListener("click", swallow, { capture: true, once: true });
+      window.setTimeout(() => window.removeEventListener("click", swallow, { capture: true }));
+      const share = sheet.getBoundingClientRect().height / reelHeight;
+      // Let the sheet animate from where it was dropped to where it settles.
+      sheet.classList.remove("is-dragging");
+      void sheet.offsetHeight;
+      sheet.style.height = "";
+      if (share < 0.3) setReelSheet(sheet.closest(".project-reel").querySelector("[data-reel-sheet]"), false);
+      else setReelSheetFull(sheet, share > 0.75);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  });
 
   function closeReelSheets() {
     projectsWindow.querySelectorAll('[data-reel-sheet][aria-expanded="true"]').forEach(button => setReelSheet(button, false));

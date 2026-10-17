@@ -20,7 +20,7 @@
   --win-border: #080b1e;
   --win-edge: #6b78c8;
   --win-title: #2a3270;
-  --win-title-stripe: rgba(8, 11, 30, 0.34);
+  --win-title-stripe: rgba(11, 12, 20, 0.34);
   --win-on-accent: #141c2e;
   --pixel-corners: polygon(
     0 4px, 2px 4px, 2px 2px, 4px 2px, 4px 0,
@@ -529,7 +529,7 @@ body.is-mobile-mode .book-turn:disabled { display: none; }
 .project-gallery:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: -2px; }
 .project-slide { display: grid; min-width: 100%; height: 100%; flex: 0 0 100%; margin: 0; place-items: center; scroll-snap-align: start; }
 .project-slide__label { color: #262626; font-size: 14px; font-weight: 600; }
-.reel-counter { position: absolute; top: 8px; right: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(38, 38, 38, 0.72); color: #fff; font-size: 11px; font-variant-numeric: tabular-nums; pointer-events: none; }
+.reel-counter { flex: none; margin-left: auto; padding: 3px 8px; border-radius: 999px; background: rgba(38, 38, 38, 0.72); color: #fff; font-size: 11px; font-variant-numeric: tabular-nums; pointer-events: none; }
 /* Each dot jumps to its slide; the button is larger than the dot it draws, to be easy to hit. */
 .reel-dots { position: absolute; bottom: 12px; left: 50%; display: flex; padding: 0 4px; border-radius: 999px; background: rgba(26, 29, 34, 0.8); transform: translateX(-50%); }
 .reel-dots button { display: grid; width: 11px; height: 13px; place-items: center; padding: 0; border: 0; background: transparent; cursor: var(--cursor-hand, pointer); }
@@ -548,36 +548,56 @@ body.is-mobile-mode .book-turn:disabled { display: none; }
 .reel-action { display: grid; padding: 0; border: 0; background: transparent; color: var(--reel-ink); cursor: var(--cursor-hand, pointer); filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); }
 .reel-action .reel-icon { width: 20px; height: 20px; }
 .reel-action:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: 2px; }
-/* The description sheet: slides up over the lower half, dimming the slides above it. */
+/* The project's name, pinned to the top of its reel. */
+/* Along the top: the project's name, its links, and the slide counter. */
+.reel-topbar { position: absolute; top: 8px; right: 8px; left: 8px; display: flex; align-items: center; gap: 5px; pointer-events: none; }
+.reel-links { display: flex; flex: none; gap: 4px; }
+.reel-link { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: rgba(38, 38, 38, 0.72); color: #fff; pointer-events: auto; transition: background-color 140ms ease; }
+.reel-link:hover { background: rgba(38, 38, 38, 0.92); }
+.reel-link:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: 1px; }
+.reel-link .reel-icon { width: 13px; height: 13px; }
+.reel-title { min-width: 0; overflow: hidden; margin: 0; padding: 3px 9px; border-radius: 999px; background: rgba(38, 38, 38, 0.72); color: #fff; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+/*
+  The description sheet: slides up over the lower half, dimming the slides
+  above it. Its top can be dragged: up to fill the whole reel, or down to
+  put it away. desktop.js sizes it while dragging and snaps it on release.
+*/
 .reel-sheet {
   position: absolute;
   z-index: 4;
   right: 0;
   bottom: 0;
   left: 0;
+  display: flex;
   height: 50%;
-  overflow-y: auto;
-  padding: 6px 14px 14px;
+  flex-direction: column;
   border-radius: 14px 14px 0 0;
   background: #262626;
   box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0);
-  overscroll-behavior: contain;
-  scrollbar-width: none;
   visibility: hidden;
   transform: translateY(100%);
-  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 240ms ease, visibility 0s linear 240ms;
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), height 240ms cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 240ms ease, box-shadow 240ms ease, visibility 0s linear 240ms;
 }
-.reel-sheet::-webkit-scrollbar { display: none; }
-.reel-sheet.is-open { box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45); visibility: visible; transform: none; transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 240ms ease; }
-.reel-sheet__handle { display: block; width: 32px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: #555; }
-.reel-sheet__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.reel-sheet.is-open { box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45); visibility: visible; transform: none; transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), height 240ms cubic-bezier(0.2, 0.8, 0.2, 1), border-radius 240ms ease, box-shadow 240ms ease; }
+.reel-sheet.is-full { height: 100%; border-radius: 0; }
+.reel-sheet.is-dragging { transition: none; }
+.reel-sheet__grip { flex: none; padding: 0 14px 6px; cursor: grab; touch-action: none; user-select: none; }
+.reel-sheet.is-dragging .reel-sheet__grip { cursor: grabbing; }
+.reel-sheet__handle { display: block; width: 100%; height: 16px; padding: 0; border: 0; background: transparent; cursor: inherit; }
+.reel-sheet__handle::before { display: block; width: 32px; height: 4px; margin: 0 auto; border-radius: 2px; background: #555; content: ""; }
+.reel-sheet__handle:focus-visible { outline: 2px solid var(--desktop-accent); outline-offset: -2px; }
+.reel-sheet__header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .reel-sheet__title { margin: 0; font-size: 13px; font-weight: 700; }
-.reel-sheet__close { display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 0; border-radius: 50%; background: #363636; color: var(--reel-ink); cursor: var(--cursor-hand, pointer); }
-.reel-sheet__close .reel-icon { width: 12px; height: 12px; }
-.reel-sheet__close:focus-visible { outline: 2px solid var(--desktop-accent); }
+.reel-sheet__date { flex: none; color: var(--reel-muted); font-size: 11px; }
+.reel-sheet__body { min-height: 0; flex: 1; overflow-y: auto; padding: 0 14px 14px; overscroll-behavior: contain; scrollbar-width: none; }
+.reel-sheet__body::-webkit-scrollbar { display: none; }
 .reel-sheet p { margin: 0; color: var(--reel-ink); font-size: 12px; }
+.reel-sheet__section { margin-top: 12px; padding-top: 10px; border-top: 1px solid #363636; }
+.reel-sheet__section h5 { margin: 0 0 3px; color: var(--reel-muted); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 body.animations-disabled .reel-sheet { transition: none; }
 .reel-icon { display: block; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Brand marks are solid shapes rather than lines. */
+.reel-icon--solid { fill: currentColor; stroke: none; }
 .settings-content { padding-top: 38px; }
 /* Auto rearrange slides the windows to their new places. */
 .portfolio-window.is-arranging { transition: left 320ms ease, top 320ms ease; }
