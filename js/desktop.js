@@ -224,7 +224,7 @@
     const width = settingsPopover.getBoundingClientRect().width;
     const left = Math.max(8, Math.min(anchor.left, window.innerWidth - width - 8));
     settingsPopover.style.left = `${left}px`;
-    settingsPopover.style.top = `${anchor.bottom + 6}px`;
+    settingsPopover.style.top = `${anchor.bottom + 3}px`;
   }
 
   function setSettingsPopoverOpen(open) {
@@ -240,10 +240,6 @@
 
   settingsToggle.addEventListener("click", () => {
     setSettingsPopoverOpen(settingsPopover.hidden);
-  });
-  settingsPopover.querySelector(".desktop-settings-popover__close").addEventListener("click", () => {
-    setSettingsPopoverOpen(false);
-    settingsToggle.focus();
   });
   document.addEventListener("pointerdown", event => {
     if (settingsPopover.hidden || settingsPopover.contains(event.target) || settingsToggle.contains(event.target)) return;
@@ -374,11 +370,11 @@
     const now = new Date();
     clock.dateTime = now.toISOString();
     const compact = window.matchMedia("(max-width: 380px)").matches;
-    clock.textContent = new Intl.DateTimeFormat(undefined, {
-      ...(compact ? { month: "numeric", day: "numeric" } : { weekday: "short", month: "short", day: "numeric" }),
-      hour: "numeric",
-      minute: "2-digit"
-    }).format(now);
+    // Written the way the macOS menu bar writes it, "Mon Feb 8  8:30 AM", without commas.
+    const date = new Intl.DateTimeFormat(undefined, compact ? { month: "numeric", day: "numeric" } : { weekday: "short", month: "short", day: "numeric" })
+      .formatToParts(now).filter((part) => part.type !== "literal").map((part) => part.value).join(compact ? "/" : " ");
+    const time = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(now);
+    clock.textContent = `${date}\u2002${time}`;
   };
   updateClock();
   window.addEventListener("resize", updateClock, { passive: true });

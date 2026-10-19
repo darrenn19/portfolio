@@ -44,12 +44,13 @@
   --desktop-dock-mobile-background: rgba(18, 24, 50, 0.6);
   --desktop-dock-border: rgba(226, 232, 255, 0.24);
   --day-progress: 0%;
-  --system-bar-background-dark: rgba(9, 25, 31, 0.76);
-  --system-bar-background-light: rgba(223, 238, 235, 0.82);
+  --menubar-height: 24px;
+  --system-bar-background-dark: rgba(9, 25, 31, 0.4);
+  --system-bar-background-light: rgba(232, 242, 240, 0.5);
   --system-bar-foreground-dark: #f1edda;
   --system-bar-foreground-light: #263e48;
-  --system-bar-border-dark: rgba(231, 235, 211, 0.22);
-  --system-bar-border-light: rgba(38, 62, 72, 0.24);
+  --system-bar-border-dark: rgba(231, 235, 211, 0.12);
+  --system-bar-border-light: rgba(38, 62, 72, 0.14);
   --system-bar-background: color-mix(in srgb, var(--system-bar-background-dark) calc(100% - var(--day-progress)), var(--system-bar-background-light) var(--day-progress));
   --system-bar-foreground: color-mix(in srgb, var(--system-bar-foreground-dark) calc(100% - var(--day-progress)), var(--system-bar-foreground-light) var(--day-progress));
   --system-bar-border: color-mix(in srgb, var(--system-bar-border-dark) calc(100% - var(--day-progress)), var(--system-bar-border-light) var(--day-progress));
@@ -182,37 +183,42 @@ body.has-open-window .pixel-night::after { opacity: 1; }
   z-index: 40;
   inset: 0 0 auto;
   display: flex;
-  height: 30px;
+  height: var(--menubar-height);
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 18px;
+  padding: 0 10px;
   border-bottom: 1px solid var(--system-bar-border);
   background: var(--system-bar-background);
   color: var(--system-bar-foreground);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
-  backdrop-filter: blur(12px);
-  font-size: 11px;
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  font: 500 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
   user-select: none;
 }
 .system-menubar__left, .system-menubar__status { display: flex; height: 100%; align-items: center; }
-.system-menubar__left { gap: 18px; min-width: 0; }
-.system-brand { display: flex; height: 100%; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: inherit; cursor: var(--cursor-hand, pointer); font: inherit; }
+.system-menubar__left { gap: 4px; min-width: 0; }
+/* Menu bar items get the rounded hover pill of the macOS bar, and keep it while their menu is open. */
+.system-brand, .system-clock { height: 20px; padding: 0 8px; border-radius: 4px; }
+.system-brand { display: flex; align-items: center; gap: 8px; border: 0; background: none; color: inherit; cursor: var(--cursor-hand, pointer); font: inherit; }
+.system-brand:hover, .system-brand[aria-expanded="true"] { background: color-mix(in srgb, var(--system-bar-foreground) 20%, transparent); }
+.system-brand:focus-visible { outline: 1px solid color-mix(in srgb, var(--system-bar-foreground) 55%, transparent); outline-offset: 0; }
 .system-brand strong { font-size: 11px; }
-.system-brand__mark { display: grid; width: 19px; height: 19px; place-items: center; border: 1px solid rgba(241, 237, 218, 0.62); background: var(--desktop-accent); color: #172c2c; font-size: 12px; font-weight: 700; }
-.system-menubar__divider { width: 1px; height: 17px; flex: 0 0 1px; background: color-mix(in srgb, var(--system-bar-foreground) 32%, transparent); }
+.system-brand__mark { display: grid; width: 14px; height: 14px; place-items: center; background: var(--desktop-accent); color: #172c2c; box-shadow: inset -2px -2px 0 rgba(8, 11, 30, 0.22); font: 700 11px/1 "Courier New", Courier, monospace; text-shadow: none; }
+.system-menubar__divider { width: 1px; height: 14px; flex: 0 0 1px; background: color-mix(in srgb, var(--system-bar-foreground) 32%, transparent); }
 .system-app-name { font-weight: 700; }
-.system-menubar__status { flex: 0 0 auto; gap: 10px; margin-left: auto; color: var(--system-bar-foreground); }
-.system-clock { min-width: 130px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.system-menubar__divider--status { height: 15px; margin: 0 3px; }
+.system-menubar__status { flex: 0 0 auto; gap: 4px; margin-left: auto; color: var(--system-bar-foreground); }
+.system-clock { display: flex; align-items: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.system-menubar__divider--status { height: 13px; margin: 0 2px; }
 /* Phones have no right-click menu, so they keep a fullscreen button and an exit button. */
 body:not(.is-mobile-mode) .system-menubar__divider--status,
 body:not(.is-mobile-mode) .fullscreen-toggle,
 body:not(.is-mobile-mode) .fullscreen-exit { display: none; }
-.fullscreen-toggle { display: grid; width: 26px; height: 24px; place-items: center; padding: 0; border: 0; background: transparent; color: var(--system-bar-foreground); cursor: var(--cursor-hand, pointer); }
+.fullscreen-toggle { display: grid; width: 24px; height: 20px; place-items: center; padding: 0; border: 0; background: transparent; color: var(--system-bar-foreground); cursor: var(--cursor-hand, pointer); }
 .fullscreen-toggle:hover { color: var(--desktop-accent); }
 .fullscreen-toggle:focus-visible { outline: 1px solid color-mix(in srgb, var(--system-bar-foreground) 55%, transparent); outline-offset: 1px; }
-.fullscreen-glyph { display: block; width: 15px; height: 15px; background: linear-gradient(currentColor, currentColor) left top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 2px 6px no-repeat; transition: transform 180ms ease; }
+.fullscreen-glyph { display: block; width: 13px; height: 13px; background: linear-gradient(currentColor, currentColor) left top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right top / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right top / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) left bottom / 2px 6px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 6px 2px no-repeat, linear-gradient(currentColor, currentColor) right bottom / 2px 6px no-repeat; transition: transform 180ms ease; }
 .fullscreen-toggle:hover .fullscreen-glyph { transform: scale(0.84); }
 .fullscreen-exit[hidden] { display: none; }
 /* Leaving full screen: a large pixel close button, like a window's own. */
@@ -224,25 +230,37 @@ body:not(.is-mobile-mode) .fullscreen-exit { display: none; }
 .fullscreen-exit:active { box-shadow: inset -2px -2px 0 rgba(255, 255, 255, 0.3), inset 2px 2px 0 rgba(8, 11, 30, 0.35); }
 .fullscreen-exit:active::after { transform: translate(1px, 1px); }
 .desktop-settings-popover[hidden] { display: none; }
-.desktop-settings-popover { position: fixed; z-index: 60; display: grid; width: min(276px, calc(100vw - 16px)); padding: 13px 15px 15px; border: 2px solid var(--win-border); background: var(--pixel-corner-dots), linear-gradient(var(--win-bg), var(--win-bg)) 2px 2px / calc(100% - 4px) calc(100% - 4px) no-repeat, var(--win-edge); color: var(--win-ink); clip-path: var(--pixel-corners); transform: translateY(-3px); }
-.desktop-settings-popover.is-open { transform: translateY(0); }
-.desktop-settings-popover__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--win-line); }
-.desktop-settings-popover__header h2 { margin: 0; font: 700 12px "Courier New", Courier, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
-.desktop-settings-popover__close { display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 3px solid var(--win-border); background: #d95b50; color: var(--win-on-accent); box-shadow: var(--pixel-bevel); cursor: var(--cursor-hand, pointer); font: 700 14px/1 "Courier New", Courier, monospace; }
-.desktop-settings-popover .setting-row { min-height: 58px; }
-.desktop-settings-popover .setting-row:last-child { border-bottom: 1px solid var(--win-line); }
-.desktop-settings-popover input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--desktop-accent); cursor: var(--cursor-hand, pointer); }
+/*
+  Settings drop down from the menu bar like a macOS menu: frosted and
+  translucent, compact rows split by hairlines, but still a pixel box
+  with stepped corners, bevelled buttons and the monospace face.
+*/
+.desktop-settings-popover { --menu-glass: color-mix(in srgb, var(--win-bg) 74%, transparent); position: fixed; z-index: 60; display: grid; width: min(248px, calc(100vw - 16px)); padding: 4px 6px 6px; border: 2px solid var(--win-border); background: var(--pixel-corner-dots), linear-gradient(var(--menu-glass), var(--menu-glass)) 2px 2px / calc(100% - 4px) calc(100% - 4px) no-repeat, color-mix(in srgb, var(--win-edge) 70%, transparent); color: var(--win-ink); clip-path: var(--pixel-corners); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); font: 700 12px "Courier New", Courier, monospace; opacity: 0; transform: translateY(-4px); transition: opacity 120ms ease, transform 120ms ease; }
+.desktop-settings-popover.is-open { opacity: 1; transform: translateY(0); }
+body.animations-disabled .desktop-settings-popover { transition: none; }
+.desktop-settings-popover__header { padding: 5px 8px 4px; }
+.desktop-settings-popover__header h2 { margin: 0; color: var(--win-muted); font: 700 10px "Courier New", Courier, monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+.desktop-settings-popover .setting-row { min-height: 32px; gap: 12px; padding: 4px 8px; border-top: 0; }
+.desktop-settings-popover .setting-row + .setting-row { box-shadow: 0 -1px 0 var(--win-line); }
+.desktop-settings-popover .setting-row strong { font-size: 12px; }
+.desktop-settings-popover label.setting-row:hover { background: var(--desktop-accent); color: var(--win-on-accent); }
+.desktop-settings-popover input[type="checkbox"] { width: 14px; height: 14px; flex: 0 0 auto; margin: 0; border: 2px solid var(--win-border); background: var(--win-bg-alt); box-shadow: var(--pixel-bevel); appearance: none; cursor: var(--cursor-hand, pointer); }
+.desktop-settings-popover input[type="checkbox"]:checked { background: var(--desktop-accent); }
+/* A pixel tick, drawn in 2px squares. */
+.desktop-settings-popover input[type="checkbox"]:checked::after { display: block; width: 2px; height: 2px; margin: 4px 0 0 1px; background: var(--win-border); box-shadow: 2px 2px, 4px 0, 6px -2px; color: var(--win-border); content: ""; }
+.desktop-settings-popover input[type="checkbox"]:focus-visible { outline: 2px solid var(--desktop-ink); outline-offset: 1px; }
 .desktop-settings-popover .appearance-setting-row { cursor: var(--cursor-arrow, default); }
-.appearance-button { flex: 0 0 auto; padding: 6px 10px; border: 3px solid var(--win-border); border-radius: 0; background: var(--desktop-accent); color: var(--win-on-accent); box-shadow: var(--pixel-bevel); cursor: var(--cursor-hand, pointer); font: 700 11px "Courier New", Courier, monospace; white-space: nowrap; }
+.appearance-button { flex: 0 0 auto; padding: 3px 7px; border: 2px solid var(--win-border); border-radius: 0; background: var(--desktop-accent); color: var(--win-on-accent); box-shadow: var(--pixel-bevel); cursor: var(--cursor-hand, pointer); font: 700 10px "Courier New", Courier, monospace; white-space: nowrap; }
 .appearance-button:hover { filter: brightness(1.06); }
+.appearance-button:active { box-shadow: inset -2px -2px 0 rgba(255, 255, 255, 0.3), inset 2px 2px 0 rgba(8, 11, 30, 0.35); }
 .appearance-button:focus-visible { outline: 2px solid var(--desktop-ink); outline-offset: 2px; }
-.desktop-settings-popover .accent-setting-row { display: grid; gap: 10px; padding: 10px 0 12px; }
-.accent-swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
-.accent-swatch { position: relative; display: grid; width: 100%; aspect-ratio: 1; place-items: center; padding: 0; border: 3px solid var(--win-border); border-radius: 0; background: var(--swatch-color); box-shadow: var(--pixel-bevel); cursor: var(--cursor-hand, pointer); transition: transform 140ms ease; }
+.desktop-settings-popover .accent-setting-row { display: grid; justify-content: stretch; gap: 7px; padding: 6px 8px 8px; cursor: var(--cursor-arrow, default); }
+.accent-swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.accent-swatch { position: relative; display: grid; width: 100%; aspect-ratio: 1; place-items: center; padding: 0; border: 2px solid var(--win-border); border-radius: 0; background: var(--swatch-color); box-shadow: var(--pixel-bevel); cursor: var(--cursor-hand, pointer); transition: transform 140ms ease; }
 .accent-swatch:hover { transform: translateY(-2px); }
 .accent-swatch:focus-visible { outline: 2px solid var(--desktop-ink); outline-offset: 2px; }
 .accent-swatch.is-selected { box-shadow: var(--pixel-bevel), 0 0 0 2px var(--win-ink); }
-.accent-swatch.is-selected::after { color: #172c2c; content: "✓"; font: 700 13px/1 "Segoe UI Symbol", sans-serif; text-shadow: 0 1px rgba(255, 255, 255, 0.7); }
+.accent-swatch.is-selected::after { color: #172c2c; content: "\2713"; font: 700 11px/1 "Segoe UI Symbol", sans-serif; text-shadow: 0 1px rgba(255, 255, 255, 0.7); }
 body.is-fullscreen-view .system-menubar,
 body.is-fullscreen-view .desktop-dock,
 body.is-fullscreen-view .portfolio-window { display: none !important; }
@@ -300,7 +318,7 @@ body.is-theme-transitioning .fullscreen-exit { opacity: 0; visibility: hidden; p
 .genie-stage .portfolio-window { clip-path: none; }
 .genie-stage .book-leaves { perspective: none; }
 /* Expanding fills the screen below the menu bar; the dock stays on top of it (Projects keeps its phone shape instead). */
-.portfolio-window.is-expanded:not(.projects-window) { inset: 30px 0 0; width: auto; height: auto; min-width: 0; min-height: 0; resize: none; transform: none; }
+.portfolio-window.is-expanded:not(.projects-window) { inset: var(--menubar-height) 0 0; width: auto; height: auto; min-width: 0; min-height: 0; resize: none; transform: none; }
 .projects-window.is-expanded { inset: auto; top: 42px; right: auto; bottom: auto; left: 50%; width: auto; height: min(746px, calc(100svh - 138px)); min-width: 0; min-height: 0; max-width: calc(100vw - 32px); aspect-ratio: 9 / 16; border-radius: 0; transform: translateX(-50%); }
 
 .resize-handle { position: absolute; z-index: 2; display: block; touch-action: none; }
@@ -684,14 +702,8 @@ body.animations-disabled .portfolio-window.is-arranging { transition: none; }
 .dock-item.is-focused .dock-icon { box-shadow: 0 3px 6px rgba(3, 8, 24, 0.4), 0 0 14px color-mix(in srgb, var(--desktop-accent) 55%, transparent); }
 
 @media (max-width: 767px) {
-  .system-menubar { height: 28px; padding: 0 12px; }
-  .system-menubar__left { gap: 10px; }
+  .system-menubar { padding: 0 6px; font-size: 12px; }
   .system-brand { gap: 6px; }
-  .system-brand__mark { width: 17px; height: 17px; }
-  .system-menubar__left { gap: 7px; }
-  .system-menubar__status { gap: 7px; margin-left: auto; }
-  .system-clock { min-width: 0; font-size: 9px; }
-  .fullscreen-toggle { width: 22px; height: 21px; }
   .projects-window { width: 100%; height: auto; border-radius: 0; }
   .project-slide__label { font-size: 18px; }
   .gallery-arrow { width: 28px; height: 28px; opacity: 1; }
@@ -701,7 +713,7 @@ body.animations-disabled .portfolio-window.is-arranging { transition: none; }
   Mobile: the menu bar and dock are fixed-height bars, and a window fills
   exactly the space between them.
 */
-body.is-mobile-mode { --mobile-menubar-height: 28px; --mobile-dock-height: calc(64px + max(8px, env(safe-area-inset-bottom))); }
+body.is-mobile-mode { --mobile-menubar-height: var(--menubar-height); --mobile-dock-height: calc(64px + max(8px, env(safe-area-inset-bottom))); }
 body.is-mobile-mode .desktop-dock { right: 0; bottom: 0; left: 0; align-items: flex-start; justify-content: space-around; gap: 0; height: var(--mobile-dock-height); padding: 8px 6px 0; transform: none; }
 body.is-mobile-mode .desktop-dock::before { border-width: 1px 0 0; border-radius: 0; background: var(--desktop-dock-mobile-background); box-shadow: 0 -8px 24px rgba(3, 8, 24, 0.25); }
 body.is-mobile-mode .dock-item { display: grid; width: min(22vw, 84px); height: auto; justify-items: center; gap: 4px; }
@@ -717,12 +729,8 @@ body.is-mobile-mode .window-titlebar { flex-basis: 32px; grid-template-columns: 
 body.is-mobile-mode .window-control--close::after { top: 10px; left: 10px; }
 
 @media (max-width: 480px) {
-  .system-menubar { padding-right: 6px; padding-left: 6px; }
-  .system-menubar__left { gap: 5px; }
-  .system-brand { gap: 4px; }
-  .system-brand strong { font-size: 10px; }
-  .system-menubar__status { gap: 5px; margin-left: auto; }
-  .system-clock { min-width: 0; max-width: none; overflow: visible; text-overflow: clip; white-space: nowrap; font-size: 9px; }
+  .system-menubar { padding-right: 2px; padding-left: 2px; }
+  .system-brand, .system-clock { padding: 0 6px; }
   .portfolio-window { width: calc(100vw - 24px); min-width: 0; }
   .window-content { padding: 28px 24px; }
   .window-content p:not(.eyebrow) { font-size: 14px; }
